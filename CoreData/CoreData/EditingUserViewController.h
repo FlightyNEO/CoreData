@@ -1,5 +1,5 @@
 //
-//  AppDelegate.h
+//  EditingUserViewController.h
 //  CoreData
 //
 //  Created by Arkadiy Grigoryanc on 09.12.16.
@@ -8,9 +8,10 @@
 
 #import <UIKit/UIKit.h>
 
-@interface AppDelegate : UIResponder <UIApplicationDelegate>
+@class User;
 
-@property (strong, nonatomic) UIWindow *window;
+@interface EditingUserViewController : UITableViewController
+
+@property (strong, nonatomic) User *user;
 
 @end
-
