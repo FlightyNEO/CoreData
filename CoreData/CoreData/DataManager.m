@@ -43,45 +43,62 @@
     user3.lastName = @"Draco";
     user3.eMail = @"draco@mail.ru";
     
+    User *user4 = [NSEntityDescription insertNewObjectForEntityForName:@"User"
+                                               inManagedObjectContext:self.persistentContainer.viewContext];
+    user4.firstName = @"Arkadiy";
+    user4.lastName = @"Grigoryanc";
+    user4.eMail = @"dragon_500@mail.ru";
     
-    Professor *professor = [NSEntityDescription insertNewObjectForEntityForName:@"Professor"
-                                                         inManagedObjectContext:self.persistentContainer.viewContext];
-    professor.firstName = @"Mariana";
-    professor.lastName = @"Viktorovna";
+    User *user5 = [NSEntityDescription insertNewObjectForEntityForName:@"User"
+                                                inManagedObjectContext:self.persistentContainer.viewContext];
+    user5.firstName = @"Araik";
+    user5.lastName = @"Grigoryanc";
+    user5.eMail = @"aag_90@mail.ru";
     
-    Professor *professor2 = [NSEntityDescription insertNewObjectForEntityForName:@"Professor"
-                                                         inManagedObjectContext:self.persistentContainer.viewContext];
-    professor2.firstName = @"Elena";
-    professor2.lastName = @"Korshunova";
+    User *user6 = [NSEntityDescription insertNewObjectForEntityForName:@"User"
+                                                inManagedObjectContext:self.persistentContainer.viewContext];
+    user6.firstName = @"Yan";
+    user6.lastName = @"Karlov";
+    user6.eMail = @"yan-yah@mail.ru";
     
-    Professor *professor3 = [NSEntityDescription insertNewObjectForEntityForName:@"Professor"
-                                                         inManagedObjectContext:self.persistentContainer.viewContext];
-    professor3.firstName = @"Yan";
-    professor3.lastName = @"Yacukovich";
+//    Professor *professor = [NSEntityDescription insertNewObjectForEntityForName:@"Professor"
+//                                                         inManagedObjectContext:self.persistentContainer.viewContext];
+//    professor.firstName = @"Mariana";
+//    professor.lastName = @"Viktorovna";
+//    
+//    Professor *professor2 = [NSEntityDescription insertNewObjectForEntityForName:@"Professor"
+//                                                         inManagedObjectContext:self.persistentContainer.viewContext];
+//    professor2.firstName = @"Elena";
+//    professor2.lastName = @"Korshunova";
+//    
+//    Professor *professor3 = [NSEntityDescription insertNewObjectForEntityForName:@"Professor"
+//                                                         inManagedObjectContext:self.persistentContainer.viewContext];
+//    professor3.firstName = @"Yan";
+//    professor3.lastName = @"Yacukovich";
     
     Course *course = [NSEntityDescription insertNewObjectForEntityForName:@"Course"
                                                    inManagedObjectContext:self.persistentContainer.viewContext];
     course.name = @"Math";
     course.subject = @"Mathimatic";
     course.sector = @"Math/Phis";
-    course.professor = professor;
-    course.users = [NSSet setWithObjects:user, user2, nil];
+    course.teacher = user2;
+    course.students = [NSSet setWithObjects:user, user3, user6, user4, nil];
     
     Course *course2 = [NSEntityDescription insertNewObjectForEntityForName:@"Course"
                                                     inManagedObjectContext:self.persistentContainer.viewContext];
     course2.name = @"Astronom";
     course2.subject = @"Astronomiya";
     course2.sector = @"Astro";
-    course2.professor = professor2;
-    course2.users = [NSSet setWithObjects:user2, user3, nil];
+    course2.teacher = user2;
+    //course2.students = [NSSet setWithObjects:user2, user3, nil];
     
     Course *course3 = [NSEntityDescription insertNewObjectForEntityForName:@"Course"
                                                     inManagedObjectContext:self.persistentContainer.viewContext];
     course3.name = @"Phizic";
     course3.subject = @"Phizic";
     course3.sector = @"Math/Phis";
-    course3.professor = professor3;
-    course3.users = [NSSet setWithObjects:user, user2, user3, nil];
+    //course3.teacher = ;
+    course3.students = [NSSet setWithObjects:user, user2, user3, user4, nil];
     
     NSError *error = nil;
     if (![_persistentContainer.viewContext save:&error]) {

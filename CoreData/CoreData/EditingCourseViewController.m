@@ -10,18 +10,18 @@
 #import "DataManager.h"
 
 #import "EditingUserViewController.h"
+#import "CourseUsersViewController.h"
 
 #import "Course+CoreDataClass.h"
-#import "Professor+CoreDataClass.h"
 #import "User+CoreDataClass.h"
 
 
-@interface EditingCourseViewController ()
+@interface EditingCourseViewController () <UITextFieldDelegate>
 
 @property (weak, nonatomic) UITextField *nameField;
 @property (weak, nonatomic) UITextField *subjectField;
 @property (weak, nonatomic) UITextField *sectorField;
-//@property (weak, nonatomic) Professor *professor;
+@property (weak, nonatomic) UITextField *professorField;
 
 @property (strong, nonatomic) NSArray<User *> *users;
 
@@ -41,7 +41,7 @@
     // self.navigationItem.rightBarButtonItem = self.editButtonItem;
     
     NSLog(@"COURSE - %@", _course.name);
-    NSLog(@"PROFESSOR - %@ %@", _course.professor.firstName, _course.professor.lastName);
+    NSLog(@"PROFESSOR - %@ %@", _course.teacher.firstName, _course.teacher.lastName);
     
     if (_course) {
         [self createUsers];
@@ -56,9 +56,9 @@
 - (void)viewWillAppear:(BOOL)animated {
     [super viewWillAppear:animated];
     
-    if (_editUserIndexPath) {
-        [self.tableView reloadRowsAtIndexPaths:@[_editUserIndexPath] withRowAnimation:UITableViewRowAnimationNone];
-    }
+    [self createUsers];
+    [self.tableView reloadSections:[NSIndexSet indexSetWithIndex:1] withRowAnimation:UITableViewRowAnimationNone];
+    [self.tableView reloadRowsAtIndexPaths:@[[NSIndexPath indexPathForRow:3 inSection:0]] withRowAnimation:UITableViewRowAnimationNone];
 }
 
 - (void)didReceiveMemoryWarning {
@@ -74,7 +74,7 @@
     NSSortDescriptor *lastNameSortDescriptor = [[NSSortDescriptor alloc] initWithKey:@"lastName" ascending:YES];
     [fetchRequest setSortDescriptors:@[firstNameSortDescriptor, lastNameSortDescriptor]];
     
-    NSPredicate *predicate = [NSPredicate predicateWithFormat:@"courses CONTAINS %@", _course];
+    NSPredicate *predicate = [NSPredicate predicateWithFormat:@"studesCourses CONTAINS %@", _course];
     [fetchRequest setPredicate:predicate];
     
     NSArray *results = [[DataManager sharedManager].persistentContainer.viewContext executeFetchRequest:fetchRequest error:nil];
@@ -87,6 +87,40 @@
 }
 
 #pragma mark - UITableViewDataSource
+
+- (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView {
+    return 2;
+}
+
+- (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
+    
+    switch (section) {
+        case 0:
+            return 4;
+            break;
+        case 1:
+            return _course.students.count + 1;
+            break;
+        default:
+            return 0;
+            break;
+    }
+    
+}
+
+- (NSString *)tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section {
+    switch (section) {
+        case 0:
+            return @"Editing course";
+            break;
+        case 1:
+            return @"Users";
+            break;
+        default:
+            return nil;
+            break;
+    }
+}
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
     
@@ -118,6 +152,7 @@
         
         UITextField *detail = [[UITextField alloc] initWithFrame:CGRectMake(CGRectGetWidth(cell.frame) - 200, 0, 200, 40)];
         detail.borderStyle = UITextBorderStyleRoundedRect;
+        detail.delegate = self;
         [cell addSubview:detail];
         
         switch (indexPath.row) {
@@ -141,8 +176,9 @@
                 break;
             case 3: {
                 cell.textLabel.text = @"Professor";
-                detail.text = _course.professor ? [NSString stringWithFormat:@"%@ %@", _course.professor.firstName, _course.professor.lastName] : nil;
-                detail.enabled = NO;
+                detail.text = _course.teacher ? [NSString stringWithFormat:@"%@ %@", _course.teacher.firstName, _course.teacher.lastName] : nil;
+                detail.placeholder = @"Select teacher";
+                _professorField = detail;
             }
                 break;
         }
@@ -169,9 +205,9 @@
         
         User *user = _users[indexPath.row - 1];
         
-        [_course removeUsers:[NSSet setWithObject:user]];
+        [_course removeStudents:[NSSet setWithObject:user]];
         
-        //[[DataManager sharedManager] saveContext];
+        [[DataManager sharedManager] saveContext];
         
         [self.tableView beginUpdates];
         [self.tableView deleteRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationFade];
@@ -179,44 +215,10 @@
     }
 }
 
-- (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView {
-    return 2;
-}
-
-- (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
-    
-    switch (section) {
-        case 0:
-            return 4;
-            break;
-        case 1:
-            return _course.users.count + 1;
-            break;
-        default:
-            return 0;
-            break;
-    }
-    
-}
-
-- (NSString *)tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section {
-    switch (section) {
-        case 0:
-            return @"Editing course";
-            break;
-        case 1:
-            return @"Users";
-            break;
-        default:
-            return nil;
-            break;
-    }
-}
-
 #pragma mark - UITableViewDelegate
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
-    
+    [tableView deselectRowAtIndexPath:indexPath animated:NO];
 }
 
 #pragma mark - Actions
@@ -255,7 +257,42 @@
         _editUserIndexPath = [self.tableView indexPathForSelectedRow];
         ((EditingUserViewController *)[segue destinationViewController]).user = _users[_editUserIndexPath.row - 1];
         [segue destinationViewController].navigationItem.title = @"Editing user";
+        
+    } else if ([segue.identifier isEqualToString:@"CourseUsers"]) {
+        
+        UINavigationController *nc = [segue destinationViewController];
+        
+        CourseUsersViewController *vc = (CourseUsersViewController *)nc.topViewController;
+        vc.navigationItem.title = @"Students";
+        vc.type = UsersViewControllerWithStudents;
+        vc.course = _course;
     }
+}
+
+#pragma mark - UITextFieldDelegate
+
+- (BOOL)textFieldShouldBeginEditing:(UITextField *)textField {
+    
+    if ([textField isEqual:_professorField]) {
+        
+        [self showTeacherUser];
+        
+        return NO;
+    }
+    
+    return YES;
+}
+
+#pragma mark - Methods
+
+- (void)showTeacherUser {
+    CourseUsersViewController *vc = [self.storyboard instantiateViewControllerWithIdentifier:@"CourseUsersViewController"];
+    vc.modalTransitionStyle = UIModalTransitionStyleCoverVertical;
+    vc.navigationItem.title = @"Teacher";
+    vc.type = UsersViewControllerWithTeacher;
+    vc.course = _course;
+    UINavigationController *nc = [[UINavigationController alloc] initWithRootViewController:vc];
+    [self presentViewController:nc animated:YES completion:nil];
 }
 
 @end
