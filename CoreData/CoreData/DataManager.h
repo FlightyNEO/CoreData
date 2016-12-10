@@ -8,7 +8,6 @@
 
 #import <Foundation/Foundation.h>
 #import <CoreData/CoreData.h>
-#import "CoreData+CoreDataModel.h"
 
 @interface DataManager : NSObject
 

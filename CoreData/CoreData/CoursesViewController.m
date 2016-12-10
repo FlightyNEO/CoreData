@@ -1,28 +1,27 @@
 //
-//  UsersViewController.m
+//  CoursesViewController.m
 //  CoreData
 //
-//  Created by Arkadiy Grigoryanc on 09.12.16.
+//  Created by Arkadiy Grigoryanc on 10.12.16.
 //  Copyright © 2016 Arkadiy Grigoryanc. All rights reserved.
 //
 
-#import "UsersViewController.h"
-#import "EditingUserViewController.h"
+#import "CoursesViewController.h"
+#import "EditingCourseViewController.h"
 
-#import "User+CoreDataClass.h"
+#import "Course+CoreDataClass.h"
 
-@interface UsersViewController ()
+@interface CoursesViewController ()
 
 @end
 
-@implementation UsersViewController
+@implementation CoursesViewController
 
 @synthesize fetchedResultsController = _fetchedResultsController;
 
 - (void)viewDidLoad {
     [super viewDidLoad];
     // Do any additional setup after loading the view.
-//    [[DataManager sharedManager] generateAndAddUniversity];
 }
 
 - (void)didReceiveMemoryWarning {
@@ -37,15 +36,14 @@
         return _fetchedResultsController;
     }
     
-    NSFetchRequest *fetchRequest = [User fetchRequest];
+    NSFetchRequest *fetchRequest = [Course fetchRequest];
     
     //    // Set the batch size to a suitable number.
     //    [fetchRequest setFetchBatchSize:20];
     
     // Edit the sort key as appropriate.
-    NSSortDescriptor *firstNameSortDescriptor = [[NSSortDescriptor alloc] initWithKey:@"firstName" ascending:YES];
-    NSSortDescriptor *lastNameSortDescriptor = [[NSSortDescriptor alloc] initWithKey:@"lastName" ascending:YES];
-    [fetchRequest setSortDescriptors:@[firstNameSortDescriptor, lastNameSortDescriptor]];
+    NSSortDescriptor *sortDescriptor = [[NSSortDescriptor alloc] initWithKey:@"name" ascending:YES];
+    [fetchRequest setSortDescriptors:@[sortDescriptor]];
     
     // Edit the section name key path and cache name if appropriate.
     // nil for section name key path means "no sections".
@@ -72,9 +70,9 @@
 
 - (void)configureCell:(UITableViewCell *)cell withIndexPath:(NSIndexPath *)indexPath {
     
-    User *user = [self.fetchedResultsController objectAtIndexPath:indexPath];
+    Course *course = [self.fetchedResultsController objectAtIndexPath:indexPath];
     
-    cell.textLabel.text = [NSString stringWithFormat:@"%@ %@", user.firstName, user.lastName];
+    cell.textLabel.text = course.name;
     cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
 }
 
@@ -91,12 +89,11 @@
     // Get the new view controller using [segue destinationViewController].
     // Pass the selected object to the new view controller.
     
-    if ([segue.identifier isEqualToString:@"EditUser"]) {
-        //EditingUserViewController *vc = [segue destinationViewController];
-        ((EditingUserViewController *)[segue destinationViewController]).user = [self.fetchedResultsController objectAtIndexPath:[self.tableView indexPathForSelectedRow]];
-        [segue destinationViewController].navigationItem.title = @"Editing user";
+    if ([segue.identifier isEqualToString:@"EditCourse"]) {
+        ((EditingCourseViewController *)[segue destinationViewController]).course = [self.fetchedResultsController objectAtIndexPath:[self.tableView indexPathForSelectedRow]];
+        [segue destinationViewController].navigationItem.title = @"Editing course";
     } else {
-        [segue destinationViewController].navigationItem.title = @"Add user";
+        [segue destinationViewController].navigationItem.title = @"Add course";
     }
 }
 

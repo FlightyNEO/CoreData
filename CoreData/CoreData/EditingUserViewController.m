@@ -9,11 +9,9 @@
 #import "EditingUserViewController.h"
 #import "DataManager.h"
 
-//#import "User+CoreDataClass.h"
+#import "User+CoreDataClass.h"
 
 @interface EditingUserViewController ()
-
-@property (strong, nonatomic) NSArray *cells;
 
 @property (weak, nonatomic) UITextField *firstNameField;
 @property (weak, nonatomic) UITextField *lastNameField;
@@ -22,8 +20,6 @@
 @end
 
 @implementation EditingUserViewController
-
-//@synthesize fetchedResultsController = _fetchedResultsController;
 
 - (void)viewDidLoad {
     [super viewDidLoad];
@@ -35,7 +31,6 @@
                                                                               target:self action:@selector(actionSave:)];
     
     self.navigationItem.rightBarButtonItem = saveItem;
-    
 }
 
 - (void)didReceiveMemoryWarning {
@@ -56,19 +51,15 @@
         user.lastName = _lastNameField.text;
         user.eMail = _eMailField.text;
         
-        [[DataManager sharedManager] saveContext];
-        
     } else {
         
         _user.firstName = _firstNameField.text;
         _user.lastName = _lastNameField.text;
         _user.eMail = _eMailField.text;
-        
-        [[DataManager sharedManager] saveContext];
     }
     
+    [[DataManager sharedManager] saveContext];
     [self.navigationController popViewControllerAnimated:YES];
-    
 }
 
 #pragma mark - UITableViewDataSource
@@ -83,10 +74,7 @@
     
     UITextField *detail = [[UITextField alloc] initWithFrame:CGRectMake(CGRectGetWidth(cell.frame) - 200, 0, 200, 40)];
     detail.borderStyle = UITextBorderStyleRoundedRect;
-    //detail.backgroundColor = [UIColor yellowColor];
     [cell addSubview:detail];
-    
-    
     
     switch (indexPath.row) {
         case 0:
