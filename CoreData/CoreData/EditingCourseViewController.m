@@ -43,22 +43,23 @@
     NSLog(@"COURSE - %@", _course.name);
     NSLog(@"PROFESSOR - %@ %@", _course.teacher.firstName, _course.teacher.lastName);
     
-    if (_course) {
-        [self createUsers];
+    if (_enableEditing) {
+        UIBarButtonItem *saveItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemSave
+                                                                                  target:self
+                                                                                  action:@selector(actionSave:)];
+        self.navigationItem.rightBarButtonItem = saveItem;
     }
-    
-    UIBarButtonItem *saveItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemSave
-                                                                              target:self action:@selector(actionSave:)];
-    
-    self.navigationItem.rightBarButtonItem = saveItem;
 }
 
 - (void)viewWillAppear:(BOOL)animated {
-    [super viewWillAppear:animated];
     
-    [self createUsers];
+    if (_course.students.count > 0) {
+        _users = [self createUsers];
+    }
     [self.tableView reloadSections:[NSIndexSet indexSetWithIndex:1] withRowAnimation:UITableViewRowAnimationNone];
     [self.tableView reloadRowsAtIndexPaths:@[[NSIndexPath indexPathForRow:3 inSection:0]] withRowAnimation:UITableViewRowAnimationNone];
+    
+    [super viewWillAppear:animated];
 }
 
 - (void)didReceiveMemoryWarning {
@@ -66,7 +67,20 @@
     // Dispose of any resources that can be recreated.
 }
 
-- (void)createUsers {
+#pragma mark - Methods
+
+- (UITextField *)createDetailTextFieldWithFrame:(CGRect)frame isEnabled:(BOOL)flag {
+    
+    UITextField *textField = [[UITextField alloc] initWithFrame:frame];
+    
+    textField.borderStyle = UITextBorderStyleRoundedRect;
+    textField.delegate = self;
+    textField.enabled = flag;
+    
+    return textField;
+}
+
+- (NSArray *)createUsers {
     
     NSFetchRequest *fetchRequest = [User fetchRequest];
     
@@ -83,13 +97,18 @@
         NSLog(@"%@ %@", user.firstName, user.lastName);
     }
     
-    _users = results;
+    return results;
 }
 
 #pragma mark - UITableViewDataSource
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView {
-    return 2;
+    
+    if (_enableEditing || _course.students.count > 0) {
+        return 2;
+    } else {
+        return 1;
+    }
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
@@ -98,23 +117,27 @@
         case 0:
             return 4;
             break;
-        case 1:
-            return _course.students.count + 1;
+        case 1: {
+            if (_enableEditing) {
+                return _course.students.count + 1;
+            } else {
+                return _course.students.count;
+            }
+        }
             break;
         default:
             return 0;
             break;
     }
-    
 }
 
 - (NSString *)tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section {
     switch (section) {
         case 0:
-            return @"Editing course";
+            return @"Course";
             break;
         case 1:
-            return @"Users";
+            return @"Students";
             break;
         default:
             return nil;
@@ -127,17 +150,17 @@
     UITableViewCell *cell;
     
     switch (indexPath.section) {
-        case 0:
+        case 0: {
             cell = [tableView dequeueReusableCellWithIdentifier:@"CellEdit" forIndexPath:indexPath];
+        }
             break;
         case 1: {
             
-            if (indexPath.row == 0) {
+            if (indexPath.row == 0 && _enableEditing) {
                 cell = [tableView dequeueReusableCellWithIdentifier:@"CellAddUser" forIndexPath:indexPath];
             } else {
                 cell = [tableView dequeueReusableCellWithIdentifier:@"CellUser" forIndexPath:indexPath];
             }
-            
         }
             break;
     }
@@ -150,14 +173,16 @@
     
     if ([cell.reuseIdentifier isEqualToString:@"CellEdit"]) {
         
-        UITextField *detail = [[UITextField alloc] initWithFrame:CGRectMake(CGRectGetWidth(cell.frame) - 200, 0, 200, 40)];
-        detail.borderStyle = UITextBorderStyleRoundedRect;
-        detail.delegate = self;
+        UITextField *detail = [self createDetailTextFieldWithFrame:CGRectMake(CGRectGetWidth(cell.frame) - 200 - 20,
+                                                                              (CGRectGetHeight(cell.frame) - 30) / 2,
+                                                                              200,
+                                                                              30)
+                                                         isEnabled:_enableEditing];
         [cell addSubview:detail];
         
         switch (indexPath.row) {
             case 0: {
-                cell.textLabel.text = @"Name course";
+                cell.textLabel.text = @"Course name";
                 detail.text = _course.name ? _course.name : nil;
                 _nameField = detail;
             }
@@ -175,7 +200,7 @@
             }
                 break;
             case 3: {
-                cell.textLabel.text = @"Professor";
+                cell.textLabel.text = @"Teacher";
                 detail.text = _course.teacher ? [NSString stringWithFormat:@"%@ %@", _course.teacher.firstName, _course.teacher.lastName] : nil;
                 detail.placeholder = @"Select teacher";
                 _professorField = detail;
@@ -186,7 +211,12 @@
     } else if ([cell.reuseIdentifier isEqualToString:@"CellUser"]) {
         
         if (_users) {
-            User *user = _users[indexPath.row - 1];
+            User *user;
+            if (_enableEditing) {
+                user = _users[indexPath.row - 1];
+            } else {
+                user = _users[indexPath.row];
+            }
             cell.textLabel.text = [NSString stringWithFormat:@"%@ %@", user.firstName, user.lastName];
         }
     }
@@ -218,7 +248,12 @@
 #pragma mark - UITableViewDelegate
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
-    [tableView deselectRowAtIndexPath:indexPath animated:NO];
+    //[tableView deselectRowAtIndexPath:indexPath animated:NO];
+    
+    if (_enableEditing && indexPath.section == 1 && indexPath.row > 0) {
+        [self showStudentUser];
+    }
+    
 }
 
 #pragma mark - Actions
@@ -245,30 +280,6 @@
     [self.navigationController popViewControllerAnimated:YES];
 }
 
-#pragma mark - Navigation
-
-// In a storyboard-based application, you will often want to do a little preparation before navigation
-- (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender {
-    // Get the new view controller using [segue destinationViewController].
-    // Pass the selected object to the new view controller.
-    
-    if ([segue.identifier isEqualToString:@"EditUser"]) {
-        
-        _editUserIndexPath = [self.tableView indexPathForSelectedRow];
-        ((EditingUserViewController *)[segue destinationViewController]).user = _users[_editUserIndexPath.row - 1];
-        [segue destinationViewController].navigationItem.title = @"Editing user";
-        
-    } else if ([segue.identifier isEqualToString:@"CourseUsers"]) {
-        
-        UINavigationController *nc = [segue destinationViewController];
-        
-        CourseUsersViewController *vc = (CourseUsersViewController *)nc.topViewController;
-        vc.navigationItem.title = @"Students";
-        vc.type = UsersViewControllerWithStudents;
-        vc.course = _course;
-    }
-}
-
 #pragma mark - UITextFieldDelegate
 
 - (BOOL)textFieldShouldBeginEditing:(UITextField *)textField {
@@ -283,7 +294,33 @@
     return YES;
 }
 
-#pragma mark - Methods
+#pragma mark - Navigation
+
+// In a storyboard-based application, you will often want to do a little preparation before navigation
+- (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender {
+    // Get the new view controller using [segue destinationViewController].
+    // Pass the selected object to the new view controller.
+    
+    if ([segue.identifier isEqualToString:@"User"]) {
+        
+        _editUserIndexPath = [self.tableView indexPathForSelectedRow];
+        User *user = _users[_editUserIndexPath.row - 1];
+        
+        EditingUserViewController *vc = [segue destinationViewController];
+        vc.user = user;
+        vc.enableEditing = NO;
+        [segue destinationViewController].navigationItem.title = [NSString stringWithFormat:@"%@ %@", user.firstName, user.lastName];
+        
+    } else if ([segue.identifier isEqualToString:@"CourseUsers"]) {
+        
+        UINavigationController *nc = [segue destinationViewController];
+        
+        CourseUsersViewController *vc = (CourseUsersViewController *)nc.topViewController;
+        vc.navigationItem.title = @"Students";
+        vc.type = UsersViewControllerWithStudents;
+        vc.course = _course;
+    }
+}
 
 - (void)showTeacherUser {
     CourseUsersViewController *vc = [self.storyboard instantiateViewControllerWithIdentifier:@"CourseUsersViewController"];
@@ -293,6 +330,18 @@
     vc.course = _course;
     UINavigationController *nc = [[UINavigationController alloc] initWithRootViewController:vc];
     [self presentViewController:nc animated:YES completion:nil];
+}
+
+- (void)showStudentUser {
+    _editUserIndexPath = [self.tableView indexPathForSelectedRow];
+    User *user = _users[_editUserIndexPath.row - 1];
+    
+    EditingUserViewController *vc = [self.storyboard instantiateViewControllerWithIdentifier:@"EditingUserViewController"];
+    vc.user = user;
+    vc.enableEditing = NO;
+    vc.navigationItem.title = [NSString stringWithFormat:@"%@ %@", user.firstName, user.lastName];
+    
+    [self.navigationController pushViewController:vc animated:YES];
 }
 
 @end

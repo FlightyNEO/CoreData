@@ -14,4 +14,6 @@
 
 @property (strong, nonatomic) User *user;
 
+@property (assign, nonatomic, getter=isEnableEditing) BOOL enableEditing;
+
 @end

@@ -14,4 +14,6 @@
 
 @property (strong, nonatomic) Course *course;
 
+@property (assign, nonatomic, getter=isEnableEditing) BOOL enableEditing;
+
 @end

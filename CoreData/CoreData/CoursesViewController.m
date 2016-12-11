@@ -88,12 +88,13 @@
 - (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender {
     // Get the new view controller using [segue destinationViewController].
     // Pass the selected object to the new view controller.
-    
+    EditingCourseViewController *vc = [segue destinationViewController];
+    vc.enableEditing = YES;
     if ([segue.identifier isEqualToString:@"EditCourse"]) {
-        ((EditingCourseViewController *)[segue destinationViewController]).course = [self.fetchedResultsController objectAtIndexPath:[self.tableView indexPathForSelectedRow]];
-        [segue destinationViewController].navigationItem.title = @"Editing course";
+        vc.course = [self.fetchedResultsController objectAtIndexPath:[self.tableView indexPathForSelectedRow]];
+        vc.navigationItem.title = @"Editing course";
     } else {
-        [segue destinationViewController].navigationItem.title = @"Add course";
+        vc.navigationItem.title = @"Add course";
     }
 }
 

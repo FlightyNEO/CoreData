@@ -9,6 +9,8 @@
 #import "EditingUserViewController.h"
 #import "DataManager.h"
 
+#import "EditingCourseViewController.h"
+
 #import "User+CoreDataClass.h"
 #import "Course+CoreDataClass.h"
 
@@ -21,9 +23,19 @@
 @property (strong, nonatomic) NSArray <Course *> *teachesCourses;
 @property (strong, nonatomic) NSArray <Course *> *studesCourses;
 
+@property (strong, nonatomic) NSIndexPath *editUserIndexPath;
+
 @end
 
 @implementation EditingUserViewController
+
+- (instancetype)init {
+    self = [super init];
+    if (self) {
+        _enableEditing = YES;
+    }
+    return self;
+}
 
 - (void)viewDidLoad {
     [super viewDidLoad];
@@ -31,14 +43,19 @@
     
     NSLog(@"%@", _user.firstName);
     
-    _teachesCourses = [self createTeachesCourses];
-    _studesCourses = [self createStudesCourses];
+    if (_user.teachesCourses.count > 0) {
+        _teachesCourses = [self createTeachesCourses];
+    }
+    if (_user.studesCourses.count > 0) {
+        _studesCourses = [self createStudesCourses];
+    }
     
-    UIBarButtonItem *saveItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemSave
-                                                                              target:self action:@selector(actionSave:)];
-    
-    self.navigationItem.rightBarButtonItem = saveItem;
-
+    if (_enableEditing) {
+        UIBarButtonItem *saveItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemSave
+                                                                                  target:self
+                                                                                  action:@selector(actionSave:)];
+        self.navigationItem.rightBarButtonItem = saveItem;
+    }
 }
 
 - (void)didReceiveMemoryWarning {
@@ -172,8 +189,14 @@
     
     if ([cell.reuseIdentifier isEqualToString:@"CellEdit"]) {
         
-        UITextField *detail = [[UITextField alloc] initWithFrame:CGRectMake(CGRectGetWidth(cell.frame) - 200, 0, 200, 40)];
+        UITextField *detail = [[UITextField alloc] initWithFrame:CGRectMake(CGRectGetWidth(cell.frame) - 200 - 20,
+                                                                            (CGRectGetHeight(cell.frame) - 30) / 2,
+                                                                            200,
+                                                                            30)];
         detail.borderStyle = UITextBorderStyleRoundedRect;
+        if (!_enableEditing)  {
+            detail.enabled = NO;
+        }
         [cell addSubview:detail];
         
         switch (indexPath.row) {
@@ -209,6 +232,54 @@
             }
         }
     }
+}
+
+#pragma mark - UITableViewDelegate
+
+- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
+    //[tableView deselectRowAtIndexPath:indexPath animated:NO];
+    if (indexPath.section > 0 && _enableEditing) {
+        [self showCourse];
+    }
+}
+
+#pragma mark - Navigation
+
+// In a storyboard-based application, you will often want to do a little preparation before navigation
+- (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender {
+    // Get the new view controller using [segue destinationViewController].
+    // Pass the selected object to the new view controller.
+}
+
+#pragma mark - Methods
+
+- (void)showCourse {
+    EditingCourseViewController *vc = [self.storyboard instantiateViewControllerWithIdentifier:@"EditingCourseViewController"];
+    
+    Course *course;
+    
+    _editUserIndexPath = [self.tableView indexPathForSelectedRow];
+    switch (_editUserIndexPath.section) {
+        case 1: {
+            if (_teachesCourses.count > 0) {
+                course = _teachesCourses[_editUserIndexPath.row];
+            } else {
+                course = _studesCourses[_editUserIndexPath.row];
+            }
+        }
+            break;
+        case 2:
+            course = _studesCourses[_editUserIndexPath.row];
+            break;
+        default:
+            break;
+    }
+    
+    vc.course = course;
+    vc.enableEditing = NO;
+    vc.navigationItem.title = course.name;
+    
+    [self.navigationController pushViewController:vc animated:YES];
 }
 
 @end
