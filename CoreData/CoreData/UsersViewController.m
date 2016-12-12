@@ -19,6 +19,15 @@
 
 @synthesize fetchedResultsController = _fetchedResultsController;
 
+- (instancetype)initWithCoder:(NSCoder *)coder {
+    self = [super initWithCoder:coder];
+    if (self) {
+        _type = UsersTypeAll;
+        self.navigationItem.title = @"Users";
+    }
+    return self;
+}
+
 - (void)viewDidLoad {
     [super viewDidLoad];
     // Do any additional setup after loading the view.
@@ -47,13 +56,22 @@
     NSSortDescriptor *lastNameSortDescriptor = [[NSSortDescriptor alloc] initWithKey:@"lastName" ascending:YES];
     [fetchRequest setSortDescriptors:@[firstNameSortDescriptor, lastNameSortDescriptor]];
     
+    NSFetchedResultsController *aFetchedResultsController;
+    
+    NSString *sectionNameKeyPath = nil;
+    
+    // Edit predicate
+    if (_type == UsersTypeTeachers) {
+        NSPredicate *predicate = [NSPredicate predicateWithFormat:@"teachesCourses.@count > %d", 0];
+        [fetchRequest setPredicate:predicate];
+    }
+    
     // Edit the section name key path and cache name if appropriate.
     // nil for section name key path means "no sections".
-    NSFetchedResultsController *aFetchedResultsController = [[NSFetchedResultsController alloc] initWithFetchRequest:fetchRequest
-                                                                                                managedObjectContext:self.managedObjectContext
-                                                                                                  sectionNameKeyPath:nil
-                                                                                                           cacheName:nil];
-    
+    aFetchedResultsController = [[NSFetchedResultsController alloc] initWithFetchRequest:fetchRequest
+                                                                    managedObjectContext:self.managedObjectContext
+                                                                      sectionNameKeyPath:sectionNameKeyPath
+                                                                               cacheName:nil];
     aFetchedResultsController.delegate = self;
     
     NSError *error = nil;
@@ -75,7 +93,10 @@
     User *user = [self.fetchedResultsController objectAtIndexPath:indexPath];
     
     cell.textLabel.text = [NSString stringWithFormat:@"%@ %@", user.firstName, user.lastName];
-    cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+    
+    if (_type == UsersTypeTeachers) {
+        cell.detailTextLabel.text = [NSString stringWithFormat:@"%ld", user.teachesCourses.count];
+    }
 }
 
 #pragma mark - UITableViewDelegate

@@ -8,6 +8,14 @@
 
 #import "CoreDataTabTableViewController.h"
 
+typedef enum {
+    UsersTypeAll = 1,
+    UsersTypeStudents = 2,
+    UsersTypeTeachers = 3
+} UsersType;
+
 @interface UsersViewController : CoreDataTabTableViewController
+
+@property (assign, nonatomic) UsersType type;
 
 @end

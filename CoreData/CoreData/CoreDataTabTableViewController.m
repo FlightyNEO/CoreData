@@ -14,14 +14,6 @@
 
 @implementation CoreDataTabTableViewController
 
-- (instancetype)init {
-    self = [super initWithStyle:UITableViewStylePlain];
-    if (self) {
-        
-    }
-    return self;
-}
-
 - (void)viewDidLoad {
     [super viewDidLoad];
     

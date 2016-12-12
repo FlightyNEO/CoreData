@@ -31,6 +31,14 @@
 
 @implementation EditingCourseViewController
 
+- (instancetype)initWithCoder:(NSCoder *)coder {
+    self = [super initWithCoder:coder];
+    if (self) {
+        _enableEditing = YES;
+    }
+    return self;
+}
+
 - (void)viewDidLoad {
     [super viewDidLoad];
     
@@ -213,6 +221,7 @@
         if (_users) {
             User *user;
             if (_enableEditing) {
+                cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
                 user = _users[indexPath.row - 1];
             } else {
                 user = _users[indexPath.row];
@@ -301,17 +310,7 @@
     // Get the new view controller using [segue destinationViewController].
     // Pass the selected object to the new view controller.
     
-    if ([segue.identifier isEqualToString:@"User"]) {
-        
-        _editUserIndexPath = [self.tableView indexPathForSelectedRow];
-        User *user = _users[_editUserIndexPath.row - 1];
-        
-        EditingUserViewController *vc = [segue destinationViewController];
-        vc.user = user;
-        vc.enableEditing = NO;
-        [segue destinationViewController].navigationItem.title = [NSString stringWithFormat:@"%@ %@", user.firstName, user.lastName];
-        
-    } else if ([segue.identifier isEqualToString:@"CourseUsers"]) {
+    if ([segue.identifier isEqualToString:@"CourseUsers"]) {
         
         UINavigationController *nc = [segue destinationViewController];
         

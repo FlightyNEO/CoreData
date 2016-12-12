@@ -29,8 +29,8 @@
 
 @implementation EditingUserViewController
 
-- (instancetype)init {
-    self = [super init];
+- (instancetype)initWithCoder:(NSCoder *)coder {
+    self = [super initWithCoder:coder];
     if (self) {
         _enableEditing = YES;
     }
@@ -217,6 +217,10 @@
                 break;
         }
     } else if ([cell.reuseIdentifier isEqualToString:@"CellCourse"]) {
+        
+        if (_enableEditing) {
+            cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+        }
         
         switch (indexPath.section) {
             case 1: {
