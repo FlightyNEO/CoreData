@@ -8,6 +8,8 @@
 
 #import "CoreDataTabTableViewController.h"
 
+#import "EditingCourseViewController.h"
+
 typedef enum {
     UsersViewControllerWithStudents = 1,
     UsersViewControllerWithTeacher = 2
@@ -20,5 +22,7 @@ typedef enum {
 @property (assign, nonatomic) UsersViewController type;
 
 @property (strong, nonatomic) Course *course;
+
+@property (weak, nonatomic) EditingCourseViewController *editingCourseViewController;
 
 @end

@@ -13,6 +13,8 @@
 
 @interface CourseUsersViewController ()
 
+@property (strong, nonatomic) NSIndexPath *selectedIndexPath;
+
 @end
 
 @implementation CourseUsersViewController
@@ -77,7 +79,7 @@
     switch (_type) {
         case UsersViewControllerWithStudents: {
             
-            if ([_course.students containsObject:user]) {
+            if ([_editingCourseViewController.users containsObject:user]) {
                 cell.accessoryType = UITableViewCellAccessoryCheckmark;
             } else {
                 cell.accessoryType = UITableViewCellAccessoryNone;
@@ -86,8 +88,9 @@
             break;
         case UsersViewControllerWithTeacher: {
             
-            if ([_course.teacher isEqual:user]) {
+            if ([_editingCourseViewController.teacher isEqual:user]) {
                 cell.accessoryType = UITableViewCellAccessoryCheckmark;
+                _selectedIndexPath = indexPath;
             } else {
                 cell.accessoryType = UITableViewCellAccessoryNone;
             }
@@ -106,25 +109,39 @@
     switch (_type) {
         case UsersViewControllerWithStudents: {
             
-            if ([_course.students containsObject:user]) {
-                [_course removeStudentsObject:user];
+            if ([_editingCourseViewController.users containsObject:user]) {
+                //[_course removeStudentsObject:user];
+                [_editingCourseViewController.users removeObject:user];
             } else {
-                [_course addStudentsObject:user];
+                //[_course addStudentsObject:user];
+                [_editingCourseViewController.users addObject:user];
             }
+            
+            [self.tableView reloadRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationFade];
         }
             break;
         case UsersViewControllerWithTeacher: {
             
-            if ([_course.teacher isEqual:user]) {
-                _course.teacher = NULL;
+            if ([_editingCourseViewController.teacher isEqual:user]) {
+                //_course.teacher = NULL;
+                _editingCourseViewController.teacher = nil;
             } else {
-                _course.teacher = user;
+                //_course.teacher = user;
+                _editingCourseViewController.teacher = user;
+                
+                if (_selectedIndexPath) {
+                    [self.tableView reloadRowsAtIndexPaths:@[_selectedIndexPath] withRowAnimation:UITableViewRowAnimationFade];
+                }
+                
+                _selectedIndexPath = indexPath;
             }
+            [self.tableView reloadRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationFade];
         }
             break;
     }
     
-    [self.managedObjectContext save:nil];
+    
+    //[self.managedObjectContext save:nil];
 }
 
 #pragma mark - Actions

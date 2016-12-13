@@ -43,12 +43,12 @@
     
     NSLog(@"%@", _user.firstName);
     
-    if (_user.teachesCourses.count > 0) {
-        _teachesCourses = [self createTeachesCourses];
-    }
-    if (_user.studesCourses.count > 0) {
-        _studesCourses = [self createStudesCourses];
-    }
+//    if (_user.teachesCourses.count > 0) {
+//        _teachesCourses = [self createTeachesCourses];
+//    }
+//    if (_user.studesCourses.count > 0) {
+//        _studesCourses = [self createStudesCourses];
+//    }
     
     if (_enableEditing) {
         UIBarButtonItem *saveItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemSave
@@ -56,6 +56,20 @@
                                                                                   action:@selector(actionSave:)];
         self.navigationItem.rightBarButtonItem = saveItem;
     }
+}
+
+- (void)viewWillAppear:(BOOL)animated {
+    
+    if (_user.teachesCourses.count > 0) {
+        _teachesCourses = [self createTeachesCourses];
+    }
+    if (_user.studesCourses.count > 0) {
+        _studesCourses = [self createStudesCourses];
+    }
+    
+    [self.tableView reloadData];
+    
+    [super viewWillAppear:animated];
 }
 
 - (void)didReceiveMemoryWarning {

@@ -1,13 +1,13 @@
 //
-//  TeachersNavigationController.h
+//  Section.m
 //  CoreData
 //
 //  Created by Arkadiy Grigoryanc on 12.12.16.
 //  Copyright © 2016 Arkadiy Grigoryanc. All rights reserved.
 //
 
-#import <UIKit/UIKit.h>
+#import "Section.h"
 
-@interface TeachersNavigationController : UINavigationController
+@implementation Section
 
 @end

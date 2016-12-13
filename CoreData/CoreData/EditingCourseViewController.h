@@ -9,6 +9,7 @@
 #import <UIKit/UIKit.h>
 
 @class Course;
+@class User;
 
 @interface EditingCourseViewController : UITableViewController
 
@@ -16,4 +17,7 @@
 
 @property (assign, nonatomic, getter=isEnableEditing) BOOL enableEditing;
 
+@property (strong, nonatomic) NSMutableArray<User *> *users;
+
+@property (strong, nonatomic) User *teacher;
 @end
