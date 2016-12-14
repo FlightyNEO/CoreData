@@ -12,7 +12,7 @@
 #import "EditingUserViewController.h"
 #import "CourseUsersViewController.h"
 
-#import "UIImage+UIImageWithText.h"
+#import "UIBarButtonItem+UIBarButtonItemCustomButton.h"
 
 #import "Course+CoreDataClass.h"
 #import "User+CoreDataClass.h"
@@ -22,7 +22,7 @@
 @property (weak, nonatomic) UITextField *nameField;
 @property (weak, nonatomic) UITextField *subjectField;
 @property (weak, nonatomic) UITextField *sectorField;
-@property (weak, nonatomic) UITextField *professorField;
+@property (weak, nonatomic) UITextField *teacherField;
 
 @property (strong, nonatomic) NSArray<User *> *currentUsers;
 @property (strong, nonatomic) User *currentTeacher;
@@ -37,6 +37,7 @@
     self = [super initWithCoder:coder];
     if (self) {
         _enableEditing = YES;
+        _users = [NSMutableArray array];
     }
     return self;
 }
@@ -48,13 +49,15 @@
     // self.clearsSelectionOnViewWillAppear = NO;
     
     // Uncomment the following line to display an Edit button in the navigation bar for this view controller.
-    // self.navigationItem.rightBarButtonItem = self.editButtonItem;
+     //self.navigationItem.rightBarButtonItem = self.editButtonItem;
     
     NSLog(@"COURSE - %@", _course.name);
-    NSLog(@"PROFESSOR - %@ %@", _course.teacher.firstName, _course.teacher.lastName);
+    NSLog(@"TEACHER - %@ %@", _course.teacher.firstName, _course.teacher.lastName);
     
     // Edit left bar button item
-    self.navigationItem.leftBarButtonItem = [self createLeftBarButtonItem];
+    self.navigationItem.leftBarButtonItem = [UIBarButtonItem backBarButtonItemWithTarget:self
+                                                                                  action:@selector(actionBack)
+                                                                               tintColor:self.view.tintColor];
     
     // Edit rigth bar button item
     if (_enableEditing) {
@@ -86,9 +89,6 @@
             
             _currentTeacher = _course.teacher;
         }
-        
-    } else {    // else create new course
-        _users = [NSMutableArray array];
     }
     
     [self.tableView beginUpdates];
@@ -106,29 +106,6 @@
 
 #pragma mark - Methods
 
-- (UIBarButtonItem *)createLeftBarButtonItem {
-    
-    UIView *leftButtonView = [[UIView alloc]initWithFrame:CGRectMake(0, 0, 110, 50)];
-    UIButton *leftButton = [UIButton buttonWithType:UIButtonTypeSystem];
-    leftButton.backgroundColor = [UIColor clearColor];
-    [leftButton setImage:[UIImage imageNamed:@"Icon-Back"]
-                forState:UIControlStateNormal];
-    [leftButton setTitle:@"  Back"
-                forState:UIControlStateNormal];
-    [leftButton sizeToFit];
-    leftButton.frame = CGRectMake(0, 0, CGRectGetWidth(leftButton.frame) + 25, CGRectGetHeight(leftButtonView.frame));
-    leftButton.contentHorizontalAlignment = UIControlContentHorizontalAlignmentLeft;
-    leftButton.tintColor = self.view.tintColor; //Your desired color.
-    leftButton.autoresizesSubviews = YES;
-    leftButton.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleLeftMargin;
-    [leftButton addTarget:self
-                   action:@selector(actionBack)
-         forControlEvents:UIControlEventTouchUpInside];
-    [leftButtonView addSubview:leftButton];
-    
-    return [[UIBarButtonItem alloc]initWithCustomView:leftButtonView];
-}
-
 - (UITextField *)createDetailTextFieldWithFrame:(CGRect)frame isEnabled:(BOOL)flag {
     
     UITextField *textField = [[UITextField alloc] initWithFrame:frame];
@@ -136,6 +113,9 @@
     textField.borderStyle = UITextBorderStyleRoundedRect;
     textField.delegate = self;
     textField.enabled = flag;
+    textField.autocorrectionType = UITextAutocorrectionTypeNo;
+    textField.borderStyle = UITextBorderStyleRoundedRect;
+    textField.returnKeyType = UIReturnKeyNext;
     
     return textField;
 }
@@ -166,8 +146,6 @@
     _course.sector      = _sectorField.text;
     [_course setTeacher:_teacher];
     [_course setStudents:[NSSet setWithArray:_users]];
-    
-    //[[DataManager sharedManager] saveContext];
 }
 
 #pragma mark - Alerts
@@ -199,16 +177,16 @@
     [self presentViewController:alert animated:YES completion:nil];
 }
 
-- (void)presentSaveAlert {
+- (void)presentSaveAlertWithMessage:(NSString *)message {
     
     UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"ERROR!"
-                                                                   message:@"Fill course name"
+                                                                   message:message
                                                             preferredStyle:UIAlertControllerStyleAlert];
     
     UIAlertAction *action = [UIAlertAction actionWithTitle:@"OK"
                                                      style:UIAlertActionStyleDefault
                                                    handler:^(UIAlertAction * _Nonnull action) {
-                                                       
+                                                       [_nameField becomeFirstResponder];
                                                    }];
     [alert addAction:action];
     [self presentViewController:alert animated:YES completion:nil];
@@ -292,40 +270,37 @@
                                                                               200,
                                                                               30)
                                                          isEnabled:_enableEditing];
+        
         [cell addSubview:detail];
         
         switch (indexPath.row) {
             case 0: {
                 cell.textLabel.text = @"Course name";
+                
                 detail.text = _course.name ? _course.name : nil;
                 _nameField = detail;
             }
                 break;
             case 1: {
                 cell.textLabel.text = @"Subject";
+                
                 detail.text = _course.subject ? _course.subject : nil;
                 _subjectField = detail;
             }
                 break;
             case 2: {
                 cell.textLabel.text = @"Sector";
+                
                 detail.text =  _course.sector ? _course.sector : nil;
                 _sectorField = detail;
             }
                 break;
             case 3: {
                 cell.textLabel.text = @"Teacher";
-                NSLog(@"%@", _course.teacher);
-                
-//                if (_teacher.firstName.length > 0) {
-//                    detail.text = [NSString stringWithFormat:@"%@ %@", _teacher.firstName, _teacher.lastName];
-//                } else {
-//                    detail.text = @"";
-//                }
                 
                 detail.text = _teacher.firstName.length > 0 ? [NSString stringWithFormat:@"%@ %@", _teacher.firstName, _teacher.lastName] : @"";
                 detail.placeholder = @"Select teacher";
-                _professorField = detail;
+                _teacherField = detail;
             }
                 break;
         }
@@ -400,9 +375,11 @@
          ![_course.sector isEqualToString:_sectorField.text]                    ||
          (![_course.teacher isEqual:_teacher] && _teacher.firstName.length > 0) ||
          ![_course.students isEqual:[NSSet setWithArray:_users]])) {
+            
+            [self presentBackAlert];
+            return NO;
         
-        return NO;
-    }
+        }
     
     return YES;
 }
@@ -410,8 +387,23 @@
 - (BOOL)verificationFillingOfFieldsForSave {
     
     if (_nameField.text.length > 0) {
+        
+        NSFetchRequest *fetchRequest = [Course fetchRequest];
+        NSPredicate *predicate = [NSPredicate predicateWithFormat:@"name == %@", _nameField.text];
+        [fetchRequest setPredicate:predicate];
+        NSArray *results = [[DataManager sharedManager].persistentContainer.viewContext executeFetchRequest:fetchRequest error:nil];
+        
+        if (results.count > 0 && ![_course.name isEqualToString:_nameField.text]) {
+            
+            [self presentSaveAlertWithMessage:@"This name is exist"];
+            return NO;
+            
+        }
+        
         return YES;
     }
+    
+    [self presentSaveAlertWithMessage:@"Fill course name"];
     return NO;
 }
 
@@ -419,14 +411,16 @@
 
 - (void)actionBack {
     
+    [self.view endEditing:YES];
+    
     if ([self verificationFillingOfFieldsForBack]) {
         [self.navigationController popViewControllerAnimated:YES];
-    } else {
-        [self presentBackAlert];
     }
 }
 
 - (void)actionSave:(id)sender {
+    
+    [self.view endEditing:YES];
     
     if ([self verificationFillingOfFieldsForSave ]) {
         
@@ -441,18 +435,27 @@
         [[DataManager sharedManager] saveContext];
         
         [self.navigationController popViewControllerAnimated:YES];
-        
-    } else {
-        
-        [self presentSaveAlert];
     }
 }
 
 #pragma mark - UITextFieldDelegate
 
+- (BOOL)textFieldShouldReturn:(UITextField *)textField {
+    
+    if ([textField isEqual:_nameField]) {
+        [_subjectField becomeFirstResponder];
+    } else if ([textField isEqual:_subjectField]) {
+        [_sectorField becomeFirstResponder];
+    } else if ([textField isEqual:_sectorField]) {
+        [_teacherField becomeFirstResponder];
+    }
+    
+    return YES;
+}
+
 - (BOOL)textFieldShouldBeginEditing:(UITextField *)textField {
     
-    if ([textField isEqual:_professorField]) {
+    if ([textField isEqual:_teacherField]) {
         
         [self showTeacherUser];
         

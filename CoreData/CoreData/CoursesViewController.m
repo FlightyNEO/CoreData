@@ -11,7 +11,23 @@
 
 #import "Course+CoreDataClass.h"
 
-@interface CoursesViewController ()
+typedef enum {
+    CourseTypeAll = 0,
+    CourseTypeWithTeacher = 1,
+    CourseTypeWithoutTeacher = 2
+} CourseType;
+
+typedef enum {
+    CourseFilterSubject = 0,
+    CourseFilterSector = 1
+} CourseFilter;
+
+@interface CoursesViewController () <UISearchBarDelegate>
+
+@property (weak, nonatomic) IBOutlet UISearchBar *searchBar;
+
+@property (weak, nonatomic) IBOutlet UISegmentedControl *typeCoursesControl;
+@property (weak, nonatomic) IBOutlet UISegmentedControl *filterCoursesControl;
 
 @end
 
@@ -42,14 +58,84 @@
     [fetchRequest setFetchBatchSize:20];
     
     // Edit the sort key as appropriate.
-    NSSortDescriptor *sortDescriptor = [[NSSortDescriptor alloc] initWithKey:@"name" ascending:YES];
-    [fetchRequest setSortDescriptors:@[sortDescriptor]];
+    NSSortDescriptor *sortNameDescriptor = [[NSSortDescriptor alloc] initWithKey:@"name" ascending:YES];
+    NSSortDescriptor *sortSubjectDescriptor = [[NSSortDescriptor alloc] initWithKey:@"subject" ascending:YES];
+    NSSortDescriptor *sortSectorDescriptor = [[NSSortDescriptor alloc] initWithKey:@"sector" ascending:YES];
+    NSString *sectionNameKeyPath = nil;
+    switch (_filterCoursesControl.selectedSegmentIndex) {
+        case CourseFilterSubject: {
+            sectionNameKeyPath = @"subject";
+            [fetchRequest setSortDescriptors:@[sortSubjectDescriptor, sortNameDescriptor]];
+        } break;
+        case CourseFilterSector: {
+            sectionNameKeyPath = @"sector";
+            [fetchRequest setSortDescriptors:@[sortSectorDescriptor, sortNameDescriptor]];
+        } break;
+    }
+    
+    // Edit predicate
+    NSPredicate *predicate = nil;
+    
+    NSMutableArray *arguments = [NSMutableArray array];
+    if (_searchBar.text.length > 0) {
+        for (int i = 0; i < 4; i++) {
+            [arguments addObject:_searchBar.text];
+        }
+    }
+    
+    switch (_typeCoursesControl.selectedSegmentIndex) {
+        
+        case CourseTypeWithTeacher: {
+            
+            if (_searchBar.text.length > 0) {
+                predicate = [NSPredicate predicateWithFormat:
+                             @"teacher != NULL AND "
+                             "(name CONTAINS[c] %@ OR "
+                             "subject CONTAINS[c] %@ OR "
+                             "sector CONTAINS[c] %@ OR "
+                             "teacher.firstName CONTAINS[c] %@)"
+                                               argumentArray:arguments];
+            } else {
+                predicate = [NSPredicate predicateWithFormat:@"teacher != NULL"];
+            }
+        } break;
+        
+        case CourseTypeWithoutTeacher: {
+            
+            if (_searchBar.text.length > 0) {
+                predicate = [NSPredicate predicateWithFormat:
+                             @"teacher == NULL AND "
+                             "(name CONTAINS[c] %@ OR "
+                             "subject CONTAINS[c] %@ OR "
+                             "sector CONTAINS[c] %@)"
+                                               argumentArray:arguments];
+            } else {
+                predicate = [NSPredicate predicateWithFormat:@"teacher == NULL"];
+            }
+        } break;
+        
+        default: {
+            
+            if (_searchBar.text.length > 0) {
+                predicate = [NSPredicate predicateWithFormat:
+                             @"name CONTAINS[c] %@ OR "
+                             "subject CONTAINS[c] %@ OR "
+                             "sector CONTAINS[c] %@ OR "
+                             "teacher.firstName CONTAINS[c] %@"
+                                               argumentArray:arguments];
+            }
+            
+        } break;
+    }
+    
+    [fetchRequest setPredicate:predicate];
     
     // Edit the section name key path and cache name if appropriate.
     // nil for section name key path means "no sections".
+    
     NSFetchedResultsController *aFetchedResultsController = [[NSFetchedResultsController alloc] initWithFetchRequest:fetchRequest
                                                                                                 managedObjectContext:self.managedObjectContext
-                                                                                                  sectionNameKeyPath:nil
+                                                                                                  sectionNameKeyPath:sectionNameKeyPath
                                                                                                            cacheName:nil];
     
     aFetchedResultsController.delegate = self;
@@ -67,6 +153,10 @@
 }
 
 #pragma mark - UITableViewDataSource
+
+- (NSString *)tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section {
+    return _fetchedResultsController.sections[section].name;
+}
 
 - (void)configureCell:(UITableViewCell *)cell withIndexPath:(NSIndexPath *)indexPath {
     
@@ -98,4 +188,38 @@
     }
 }
 
+#pragma mark - Actions
+
+- (IBAction)changeTypeCourses:(id)sender {
+    _fetchedResultsController = nil;
+    [self.tableView reloadData];
+}
+
+- (IBAction)changeFilterCourses:(id)sender {
+    _fetchedResultsController = nil;
+    [self.tableView reloadData];
+}
+
+#pragma mark - UISearchBarDelegate
+
+- (void)searchBarTextDidBeginEditing:(UISearchBar *)searchBar {
+    [searchBar setShowsCancelButton:YES animated:YES];
+}
+
+- (void)searchBarCancelButtonClicked:(UISearchBar *)searchBar {
+    [searchBar resignFirstResponder];
+    [searchBar setShowsCancelButton:NO animated:YES];
+}
+
+- (void)searchBar:(UISearchBar *)searchBar textDidChange:(NSString *)searchText {
+    _fetchedResultsController = nil;
+    [self.tableView reloadData];
+}
+
 @end
+
+
+
+
+
+

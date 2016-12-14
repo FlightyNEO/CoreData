@@ -11,10 +11,12 @@
 
 #import "EditingCourseViewController.h"
 
+#import "UIBarButtonItem+UIBarButtonItemCustomButton.h"
+
 #import "User+CoreDataClass.h"
 #import "Course+CoreDataClass.h"
 
-@interface EditingUserViewController ()
+@interface EditingUserViewController () <UITextFieldDelegate>
 
 @property (weak, nonatomic) UITextField *firstNameField;
 @property (weak, nonatomic) UITextField *lastNameField;
@@ -50,6 +52,12 @@
 //        _studesCourses = [self createStudesCourses];
 //    }
     
+    // Edit left bar button item
+    self.navigationItem.leftBarButtonItem = [UIBarButtonItem backBarButtonItemWithTarget:self
+                                                                                  action:@selector(actionBack)
+                                                                               tintColor:self.view.tintColor];
+    
+    // Edit right bar button item
     if (_enableEditing) {
         UIBarButtonItem *saveItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemSave
                                                                                   target:self
@@ -100,28 +108,108 @@
     return [[DataManager sharedManager].persistentContainer.viewContext executeFetchRequest:fetchRequest error:nil];
 }
 
+#pragma mark - Alerts
+
+- (void)presentBackAlert {
+    
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Apply modifications?"
+                                                                   message:nil
+                                                            preferredStyle:UIAlertControllerStyleActionSheet];
+    
+    UIAlertAction *actionDestructive = [UIAlertAction actionWithTitle:@"Apply"
+                                                                style:UIAlertActionStyleDestructive
+                                                              handler:^(UIAlertAction * _Nonnull action) {
+                                                                  [self actionSave:nil];
+                                                              }];
+    UIAlertAction *actionDefault = [UIAlertAction actionWithTitle:@"Do not apply"
+                                                            style:UIAlertActionStyleDefault
+                                                          handler:^(UIAlertAction * _Nonnull action) {
+                                                              [self.navigationController popViewControllerAnimated:YES];
+                                                          }];
+    UIAlertAction *actionCancel = [UIAlertAction actionWithTitle:@"Cancel"
+                                                           style:UIAlertActionStyleCancel
+                                                         handler:^(UIAlertAction * _Nonnull action) {
+                                                             
+                                                         }];
+    [alert addAction:actionDestructive];
+    [alert addAction:actionDefault];
+    [alert addAction:actionCancel];
+    [self presentViewController:alert animated:YES completion:nil];
+}
+
+- (void)presentSaveAlert {
+    
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"ERROR!"
+                                                                   message:@"Fill first name and last name"
+                                                            preferredStyle:UIAlertControllerStyleAlert];
+    
+    UIAlertAction *action = [UIAlertAction actionWithTitle:@"OK"
+                                                     style:UIAlertActionStyleDefault
+                                                   handler:^(UIAlertAction * _Nonnull action) {
+                                                       
+                                                   }];
+    [alert addAction:action];
+    [self presentViewController:alert animated:YES completion:nil];
+}
+
+#pragma mark - Verification filling
+
+- (BOOL)verificationFillingOfFieldsForBack {
+    
+    if ((_enableEditing)    &&
+        
+        (_firstNameField.text.length > 0     ||
+         _lastNameField.text.length > 0  ||
+         _eMailField.text.length > 0   ||
+         _user)   &&
+        
+        (![_user.firstName isEqualToString:_firstNameField.text]                        ||
+         ![_user.lastName isEqualToString:_lastNameField.text]                  ||
+         ![_user.eMail isEqualToString:_eMailField.text])) {
+            
+            return NO;
+        }
+    
+    return YES;
+}
+
+- (BOOL)verificationFillingOfFieldsForSave {
+    
+    if (_firstNameField.text.length > 0 && _lastNameField.text.length > 0) {
+        return YES;
+    }
+    return NO;
+}
+
 #pragma mark - Actions
+
+- (void)actionBack {
+    
+    if ([self verificationFillingOfFieldsForBack]) {
+        [self.navigationController popViewControllerAnimated:YES];
+    } else {
+        [self presentBackAlert];
+    }
+}
 
 - (void)actionSave:(id)sender {
     
-    if (!_user) {
+    if ([self verificationFillingOfFieldsForSave ]) {
         
-        User *user = [[User alloc] initWithContext:[DataManager sharedManager].persistentContainer.viewContext];
+        if (!_user) {
+            _user = [[User alloc] initWithContext:[DataManager sharedManager].persistentContainer.viewContext];
+        }
         
-        // If appropriate, configure the new managed object.
-        user.firstName = _firstNameField.text;
-        user.lastName = _lastNameField.text;
-        user.eMail = _eMailField.text;
+        [self changeUser];
+        
+        [[DataManager sharedManager] saveContext];
+        
+        [self.navigationController popViewControllerAnimated:YES];
         
     } else {
         
-        _user.firstName = _firstNameField.text;
-        _user.lastName = _lastNameField.text;
-        _user.eMail = _eMailField.text;
+        [self presentSaveAlert];
     }
-    
-    [[DataManager sharedManager] saveContext];
-    [self.navigationController popViewControllerAnimated:YES];
 }
 
 #pragma mark - UITableViewDataSource
@@ -207,29 +295,39 @@
                                                                             (CGRectGetHeight(cell.frame) - 30) / 2,
                                                                             200,
                                                                             30)];
+        detail.autocorrectionType = UITextAutocorrectionTypeNo;
         detail.borderStyle = UITextBorderStyleRoundedRect;
+        detail.delegate = self;
         if (!_enableEditing)  {
             detail.enabled = NO;
         }
         [cell addSubview:detail];
         
         switch (indexPath.row) {
-            case 0:
+            
+            case 0: {
                 cell.textLabel.text = @"First name";
                 detail.text = _user.firstName;
+                detail.returnKeyType = UIReturnKeyNext;
                 _firstNameField = detail;
-                break;
-            case 1:
+            } break;
+            
+            case 1: {
                 cell.textLabel.text = @"Last name";
                 detail.text = _user.lastName;
+                detail.returnKeyType = UIReturnKeyNext;
                 _lastNameField = detail;
-                break;
-            case 2:
+            } break;
+            
+            case 2: {
                 cell.textLabel.text = @"e-Mail";
                 detail.text =  _user.eMail;
+                detail.returnKeyType = UIReturnKeyDone;
+                detail.keyboardType = UIKeyboardTypeEmailAddress;
                 _eMailField = detail;
-                break;
+            } break;
         }
+        
     } else if ([cell.reuseIdentifier isEqualToString:@"CellCourse"]) {
         
         if (_enableEditing) {
@@ -237,17 +335,18 @@
         }
         
         switch (indexPath.section) {
+            
             case 1: {
                 if (_teachesCourses.count > 0) {
                     cell.textLabel.text = _teachesCourses[indexPath.row].name;
                 } else {
                     cell.textLabel.text = _studesCourses[indexPath.row].name;
                 }
-            }
-                break;
+            } break;
+            
             case 2: {
                 cell.textLabel.text = _studesCourses[indexPath.row].name;
-            }
+            } break;
         }
     }
 }
@@ -259,6 +358,21 @@
     if (indexPath.section > 0 && _enableEditing) {
         [self showCourse];
     }
+}
+
+#pragma mark - UITextFieldDelegate
+
+- (BOOL)textFieldShouldReturn:(UITextField *)textField {
+    
+    if ([textField isEqual:_firstNameField]) {
+        [_lastNameField becomeFirstResponder];
+    } else if ([textField isEqual:_lastNameField]) {
+        [_eMailField becomeFirstResponder];
+    } else {
+        [self.view endEditing:YES];
+    }
+    
+    return YES;
 }
 
 #pragma mark - Navigation
@@ -298,6 +412,12 @@
     vc.navigationItem.title = course.name;
     
     [self.navigationController pushViewController:vc animated:YES];
+}
+
+- (void)changeUser {
+    _user.firstName = _firstNameField.text;
+    _user.lastName = _lastNameField.text;
+    _user.eMail = _eMailField.text;
 }
 
 @end

@@ -11,7 +11,9 @@
 #import "Course+CoreDataClass.h"
 #import "User+CoreDataClass.h"
 
-@interface CourseUsersViewController ()
+@interface CourseUsersViewController () <UISearchBarDelegate>
+
+@property (weak, nonatomic) IBOutlet UISearchBar *searchBar;
 
 @property (strong, nonatomic) NSIndexPath *selectedIndexPath;
 
@@ -40,13 +42,18 @@
     
     NSFetchRequest *fetchRequest = [User fetchRequest];
     
-    //    // Set the batch size to a suitable number.
-    //    [fetchRequest setFetchBatchSize:20];
+    // Set the batch size to a suitable number.
+    [fetchRequest setFetchBatchSize:20];
     
     // Edit the sort key as appropriate.
     NSSortDescriptor *firstNameSortDescriptor = [[NSSortDescriptor alloc] initWithKey:@"firstName" ascending:YES];
     NSSortDescriptor *lastNameSortDescriptor = [[NSSortDescriptor alloc] initWithKey:@"lastName" ascending:YES];
     [fetchRequest setSortDescriptors:@[firstNameSortDescriptor, lastNameSortDescriptor]];
+    
+    if (_searchBar.text.length > 0) {   // if search bar full
+        NSPredicate *predicate = [NSPredicate predicateWithFormat:@"firstName CONTAINS[c] %@ OR lastName CONTAINS[c] %@", _searchBar.text, _searchBar.text];
+        [fetchRequest setPredicate:predicate];
+    }
     
     // Edit the section name key path and cache name if appropriate.
     // nil for section name key path means "no sections".
@@ -54,7 +61,6 @@
                                                                                                 managedObjectContext:self.managedObjectContext
                                                                                                   sectionNameKeyPath:nil
                                                                                                            cacheName:nil];
-    
     aFetchedResultsController.delegate = self;
     
     NSError *error = nil;
@@ -74,24 +80,34 @@
 - (void)configureCell:(UITableViewCell *)cell withIndexPath:(NSIndexPath *)indexPath {
     
     User *user = [self.fetchedResultsController objectAtIndexPath:indexPath];
+    
     cell.textLabel.text = [NSString stringWithFormat:@"%@ %@", user.firstName, user.lastName];
     
     switch (_type) {
+        
         case UsersViewControllerWithStudents: {
             
             if ([_editingCourseViewController.users containsObject:user]) {
+                
                 cell.accessoryType = UITableViewCellAccessoryCheckmark;
+                
             } else {
+                
+                
                 cell.accessoryType = UITableViewCellAccessoryNone;
             }
         }
             break;
+        
         case UsersViewControllerWithTeacher: {
             
             if ([_editingCourseViewController.teacher isEqual:user]) {
+                
                 cell.accessoryType = UITableViewCellAccessoryCheckmark;
                 _selectedIndexPath = indexPath;
+                
             } else {
+                
                 cell.accessoryType = UITableViewCellAccessoryNone;
             }
         }
@@ -107,47 +123,58 @@
     User *user = [self.fetchedResultsController objectAtIndexPath:indexPath];
     
     switch (_type) {
+        
         case UsersViewControllerWithStudents: {
             
             if ([_editingCourseViewController.users containsObject:user]) {
-                //[_course removeStudentsObject:user];
+                
                 [_editingCourseViewController.users removeObject:user];
+                
             } else {
-                //[_course addStudentsObject:user];
+                
                 [_editingCourseViewController.users addObject:user];
             }
             
             [self.tableView reloadRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationFade];
         }
             break;
+            
         case UsersViewControllerWithTeacher: {
             
             if ([_editingCourseViewController.teacher isEqual:user]) {
-                //_course.teacher = NULL;
+                
                 _editingCourseViewController.teacher = nil;
+            
             } else {
-                //_course.teacher = user;
+                
                 _editingCourseViewController.teacher = user;
                 
                 if (_selectedIndexPath) {
+                    
                     [self.tableView reloadRowsAtIndexPaths:@[_selectedIndexPath] withRowAnimation:UITableViewRowAnimationFade];
                 }
                 
                 _selectedIndexPath = indexPath;
             }
+            
             [self.tableView reloadRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationFade];
         }
             break;
     }
-    
-    
-    //[self.managedObjectContext save:nil];
 }
 
 #pragma mark - Actions
 
 - (IBAction)actionSave:(id)sender {
     [self dismissViewControllerAnimated:YES completion:nil];
+}
+
+#pragma mark - UISearchBarDelegate
+
+- (void)searchBar:(UISearchBar *)searchBar textDidChange:(NSString *)searchText {
+    //    self.sections = [self generateSectionsFromArray:self.students withFilter:searchText];
+    _fetchedResultsController = nil;
+    [self.tableView reloadData];
 }
 
 @end

@@ -20,7 +20,6 @@ typedef enum {
     UsersTypeTeachers = 2
 } UsersType;
 
-
 typedef enum {
     UsersFilterName = 0,
     UsersFilterLastName = 1
@@ -125,7 +124,7 @@ typedef enum {
         
         dispatch_async(dispatch_get_main_queue(), ^{
             
-            weakSelf.sections = sectionsArray;
+            weakSelf.sections = [sectionsArray mutableCopy];
             [weakSelf.tableView reloadData];
             
             self.currentOperation = nil;
@@ -358,10 +357,15 @@ typedef enum {
 }
 
 - (void)searchBar:(UISearchBar *)searchBar textDidChange:(NSString *)searchText {
-    //    self.sections = [self generateSectionsFromArray:self.students withFilter:searchText];
-    //    [self.tableView reloadData];
-    
     [self generateSectionsInBackgroundFromArray:_users withFilter:searchText];
 }
 
 @end
+
+
+
+
+
+
+
+
