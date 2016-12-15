@@ -1,21 +1,31 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="11542" systemVersion="16B2555" minimumToolsVersion="Automatic" sourceLanguage="Objective-C" userDefinedModelVersionIdentifier="">
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="11759" systemVersion="16C67" minimumToolsVersion="Automatic" sourceLanguage="Objective-C" userDefinedModelVersionIdentifier="">
     <entity name="Course" representedClassName="Course" syncable="YES" codeGenerationType="class">
         <attribute name="name" optional="YES" attributeType="String" syncable="YES"/>
         <attribute name="sector" optional="YES" attributeType="String" syncable="YES"/>
         <attribute name="subject" optional="YES" attributeType="String" syncable="YES"/>
         <relationship name="students" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="User" inverseName="studesCourses" inverseEntity="User" syncable="YES"/>
         <relationship name="teacher" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="User" inverseName="teachesCourses" inverseEntity="User" syncable="YES"/>
+        <relationship name="university" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="University" inverseName="courses" inverseEntity="University" syncable="YES"/>
+    </entity>
+    <entity name="University" representedClassName="University" syncable="YES" codeGenerationType="class">
+        <attribute name="name" optional="YES" attributeType="String" syncable="YES"/>
+        <relationship name="courses" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="Course" inverseName="university" inverseEntity="Course" syncable="YES"/>
+        <relationship name="students" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="User" inverseName="studentsUniversity" inverseEntity="User" syncable="YES"/>
+        <relationship name="teachers" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="User" inverseName="teachersUniversity" inverseEntity="User" syncable="YES"/>
     </entity>
     <entity name="User" representedClassName="User" syncable="YES" codeGenerationType="class">
         <attribute name="eMail" optional="YES" attributeType="String" syncable="YES"/>
         <attribute name="firstName" optional="YES" attributeType="String" syncable="YES"/>
         <attribute name="lastName" optional="YES" attributeType="String" syncable="YES"/>
+        <relationship name="studentsUniversity" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="University" inverseName="students" inverseEntity="University" syncable="YES"/>
         <relationship name="studesCourses" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Course" inverseName="students" inverseEntity="Course" syncable="YES"/>
+        <relationship name="teachersUniversity" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="University" inverseName="teachers" inverseEntity="University" syncable="YES"/>
         <relationship name="teachesCourses" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Course" inverseName="teacher" inverseEntity="Course" syncable="YES"/>
     </entity>
     <elements>
-        <element name="User" positionX="-452" positionY="98" width="128" height="118"/>
-        <element name="Course" positionX="-182" positionY="98" width="128" height="118"/>
+        <element name="Course" positionX="-184" positionY="75" width="128" height="133"/>
+        <element name="User" positionX="-441" positionY="45" width="128" height="148"/>
+        <element name="University" positionX="-443" positionY="306" width="128" height="103"/>
     </elements>
 </model>

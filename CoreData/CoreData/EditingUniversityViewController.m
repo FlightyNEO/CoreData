@@ -1,46 +1,51 @@
 //
-//  EditingCourseViewController.m
+//  EditingUniversityViewController.m
 //  CoreData
 //
-//  Created by Arkadiy Grigoryanc on 10.12.16.
+//  Created by Arkadiy Grigoryanc on 15.12.16.
 //  Copyright © 2016 Arkadiy Grigoryanc. All rights reserved.
 //
 
-#import "EditingCourseViewController.h"
+#import "EditingUniversityViewController.h"
 #import "DataManager.h"
 
 #import "EditingUserViewController.h"
+#import "EditingCourseViewController.h"
+
 #import "UserSelectionViewController.h"
+#import "CourseSelectionViewController.h"
 
 #import "UIBarButtonItem+UIBarButtonItemCustomButton.h"
 
+#import "University+CoreDataClass.h"
 #import "Course+CoreDataClass.h"
 #import "User+CoreDataClass.h"
 
-@interface EditingCourseViewController () <UITextFieldDelegate, UserSelectionViewControllerDelegate>
+@interface EditingUniversityViewController () <UITextFieldDelegate, UserSelectionViewControllerDelegate, CourseSelectionViewControllerDelegate>
 
 @property (weak, nonatomic) UITextField *nameField;
-@property (weak, nonatomic) UITextField *subjectField;
-@property (weak, nonatomic) UITextField *sectorField;
-@property (weak, nonatomic) UITextField *teacherField;
 
+@property (strong, nonatomic) NSMutableArray<Course *> *courses;
 @property (strong, nonatomic) NSMutableArray<User *> *students;
-@property (strong, nonatomic) User *teacher;
+@property (strong, nonatomic) NSMutableArray<User *> *teachers;
 
+@property (strong, nonatomic) NSArray<Course *> *currentCourses;
+@property (strong, nonatomic) NSArray<User *> *currentTeachers;
 @property (strong, nonatomic) NSArray<User *> *currentStudents;
-@property (strong, nonatomic) User *currentTeacher;
 
 @property (strong, nonatomic) NSIndexPath *editUserIndexPath;
 
 @end
 
-@implementation EditingCourseViewController
+@implementation EditingUniversityViewController
 
 - (instancetype)initWithCoder:(NSCoder *)coder {
     self = [super initWithCoder:coder];
     if (self) {
         _enableEditing = YES;
+        _courses = [NSMutableArray array];
         _students = [NSMutableArray array];
+        _teachers = [NSMutableArray array];
     }
     return self;
 }
@@ -52,10 +57,7 @@
     // self.clearsSelectionOnViewWillAppear = NO;
     
     // Uncomment the following line to display an Edit button in the navigation bar for this view controller.
-     //self.navigationItem.rightBarButtonItem = self.editButtonItem;
-    
-    NSLog(@"COURSE - %@", _course.name);
-    NSLog(@"TEACHER - %@ %@", _course.teacher.firstName, _course.teacher.lastName);
+    // self.navigationItem.rightBarButtonItem = self.editButtonItem;
     
     // Edit left bar button item
     self.navigationItem.leftBarButtonItem = [UIBarButtonItem backBarButtonItemWithTarget:self
@@ -68,15 +70,37 @@
                                                                                                target:self
                                                                                                action:@selector(actionSave)];
     }
-    
-    _teacher = _course.teacher;
 }
 
 - (void)viewWillAppear:(BOOL)animated {
     
-    if (_course) {  // if edit course
+    if (_university) {  // if edit course
         
-        if (![[NSSet setWithArray:_currentStudents] isEqual:_course.students]) {
+        if (![[NSSet setWithArray:_currentCourses] isEqual:_university.courses]) {
+            _currentCourses = [[self createCourses] mutableCopy];
+            
+            NSMutableArray *array = [NSMutableArray arrayWithArray:_currentCourses];
+            for (Course *course in _courses) {
+                if (![_currentCourses containsObject:course] && course.name.length > 0) {
+                    [array addObject:course];
+                }
+            }
+            _courses = array;
+        }
+        
+        if (![[NSSet setWithArray:_currentTeachers] isEqual:_university.teachers]) {
+            _currentTeachers = [[self createTeachers] mutableCopy];
+            
+            NSMutableArray *array = [NSMutableArray arrayWithArray:_currentTeachers];
+            for (User *user in _teachers) {
+                if (![_currentTeachers containsObject:user] && user.firstName.length > 0) {
+                    [array addObject:user];
+                }
+            }
+            _teachers = array;
+        }
+        
+        if (![[NSSet setWithArray:_currentStudents] isEqual:_university.students]) {
             _currentStudents = [[self createStudents] mutableCopy];
             
             NSMutableArray *array = [NSMutableArray arrayWithArray:_currentStudents];
@@ -87,16 +111,10 @@
             }
             _students = array;
         }
-        
-        if (![_currentTeacher.firstName isEqual:_course.teacher.firstName]) {
-            
-            _currentTeacher = _course.teacher;
-        }
     }
     
     [self.tableView beginUpdates];
-    [self.tableView reloadSections:[NSIndexSet indexSetWithIndex:1] withRowAnimation:UITableViewRowAnimationNone];
-    [self.tableView reloadRowsAtIndexPaths:@[[NSIndexPath indexPathForRow:3 inSection:0]] withRowAnimation:UITableViewRowAnimationNone];
+    [self.tableView reloadSections:[NSIndexSet indexSetWithIndexesInRange:NSMakeRange(1, 3)] withRowAnimation:UITableViewRowAnimationNone];
     [self.tableView endUpdates];
     
     [super viewWillAppear:animated];
@@ -123,7 +141,26 @@
     return textField;
 }
 
-- (NSArray *)createStudents {
+- (NSArray *)createCourses {
+    
+    NSFetchRequest *fetchRequest = [Course fetchRequest];
+    
+    NSSortDescriptor *sortDescriptor = [[NSSortDescriptor alloc] initWithKey:@"name" ascending:YES];
+    [fetchRequest setSortDescriptors:@[sortDescriptor]];
+    
+    NSPredicate *predicate = [NSPredicate predicateWithFormat:@"university == %@", _university];
+    [fetchRequest setPredicate:predicate];
+    
+    NSArray *results = [[DataManager sharedManager].persistentContainer.viewContext executeFetchRequest:fetchRequest error:nil];
+    
+    for (Course *course in results) {
+        NSLog(@"%@", course.name);
+    }
+    
+    return results;
+}
+
+- (NSArray *)createTeachers {
     
     NSFetchRequest *fetchRequest = [User fetchRequest];
     
@@ -131,7 +168,7 @@
     NSSortDescriptor *lastNameSortDescriptor = [[NSSortDescriptor alloc] initWithKey:@"lastName" ascending:YES];
     [fetchRequest setSortDescriptors:@[firstNameSortDescriptor, lastNameSortDescriptor]];
     
-    NSPredicate *predicate = [NSPredicate predicateWithFormat:@"studesCourses CONTAINS %@", _course];
+    NSPredicate *predicate = [NSPredicate predicateWithFormat:@"teachersUniversity CONTAINS %@", _university];
     [fetchRequest setPredicate:predicate];
     
     NSArray *results = [[DataManager sharedManager].persistentContainer.viewContext executeFetchRequest:fetchRequest error:nil];
@@ -143,12 +180,31 @@
     return results;
 }
 
-- (void)changeCourse {
-    _course.name        = _nameField.text;
-    _course.subject     = _subjectField.text;
-    _course.sector      = _sectorField.text;
-    [_course setTeacher:_teacher];
-    [_course setStudents:[NSSet setWithArray:_students]];
+- (NSArray *)createStudents {
+    
+    NSFetchRequest *fetchRequest = [User fetchRequest];
+    
+    NSSortDescriptor *firstNameSortDescriptor = [[NSSortDescriptor alloc] initWithKey:@"firstName" ascending:YES];
+    NSSortDescriptor *lastNameSortDescriptor = [[NSSortDescriptor alloc] initWithKey:@"lastName" ascending:YES];
+    [fetchRequest setSortDescriptors:@[firstNameSortDescriptor, lastNameSortDescriptor]];
+    
+    NSPredicate *predicate = [NSPredicate predicateWithFormat:@"studentsUniversity == %@", _university];
+    [fetchRequest setPredicate:predicate];
+    
+    NSArray *results = [[DataManager sharedManager].persistentContainer.viewContext executeFetchRequest:fetchRequest error:nil];
+    
+    for (User *user in results) {
+        NSLog(@"%@ %@", user.firstName, user.lastName);
+    }
+    
+    return results;
+}
+
+- (void)changeUniversity {
+    _university.name        = _nameField.text;
+    [_university setCourses:[NSSet setWithArray:_courses]];
+    [_university setTeachers:[NSSet setWithArray:_teachers]];
+    [_university setStudents:[NSSet setWithArray:_students]];
 }
 
 #pragma mark - Alerts
@@ -195,10 +251,10 @@
     [self presentViewController:alert animated:YES completion:nil];
 }
 
-#pragma mark - UITableViewDataSource
+#pragma mark - Table view data source
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView {
-    return 2;
+    return 4;
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
@@ -206,10 +262,26 @@
     switch (section) {
             
         case 0: {
-            return 4;
+            return 1;
         } break;
             
         case 1: {
+            if (_enableEditing) {
+                return _courses.count + 1;
+            } else {
+                return _courses.count;
+            }
+        } break;
+            
+        case 2: {
+            if (_enableEditing) {
+                return _teachers.count + 1;
+            } else {
+                return _teachers.count;
+            }
+        } break;
+            
+        case 3: {
             if (_enableEditing) {
                 return _students.count + 1;
             } else {
@@ -226,9 +298,15 @@
 - (NSString *)tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section {
     switch (section) {
         case 0:
-            return @"Course";
+            return @"University";
             break;
         case 1:
+            return @"Courses";
+            break;
+        case 2:
+            return @"Teachers";
+            break;
+        case 3:
             return @"Students";
             break;
         default:
@@ -239,22 +317,35 @@
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
     
-    UITableViewCell *cell;
+    NSString *identifire;
     
-    switch (indexPath.section) {
+    if (indexPath.section == 0) {
         
-        case 0: {
-            cell = [tableView dequeueReusableCellWithIdentifier:@"CellEdit" forIndexPath:indexPath];
-        } break;
+        identifire = @"CellEdit";
+    
+    } else {
+        
+        if (indexPath.row == 0 && _enableEditing) {
             
-        case 1: {
-            if (indexPath.row == 0 && _enableEditing) {
-                cell = [tableView dequeueReusableCellWithIdentifier:@"CellAddUser" forIndexPath:indexPath];
-            } else {
-                cell = [tableView dequeueReusableCellWithIdentifier:@"CellUser" forIndexPath:indexPath];
+            switch (indexPath.section) {
+                case 1:
+                    identifire = @"CellAddCourse";
+                    break;
+                case 2:
+                    identifire = @"CellAddTeacher";
+                    break;
+                case 3:
+                    identifire = @"CellAddStudent";
+                    break;
             }
-        } break;
+            
+        } else {
+            
+            identifire = @"Cell";
+        }
     }
+    
+    UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:identifire forIndexPath:indexPath];
     
     [self configureCell:cell withIndexPath:indexPath];
     return cell;
@@ -271,57 +362,65 @@
                                                          isEnabled:_enableEditing];
         
         [cell addSubview:detail];
+        cell.textLabel.text = @"Course name";
+        detail.text = _university.name ? _university.name : nil;
+        _nameField = detail;
         
-        switch (indexPath.row) {
-            case 0: {
-                cell.textLabel.text = @"Course name";
+    } else if ([cell.reuseIdentifier isEqualToString:@"Cell"]) {
+        
+        switch (indexPath.section) {
                 
-                detail.text = _course.name ? _course.name : nil;
-                _nameField = detail;
-            }
-                break;
             case 1: {
-                cell.textLabel.text = @"Subject";
                 
-                detail.text = _course.subject ? _course.subject : nil;
-                _subjectField = detail;
-            }
-                break;
+                if (_courses) {
+                    Course *course;
+                    if (_enableEditing) {
+                        cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+                        course = _courses[indexPath.row - 1];
+                    } else {
+                        course = _courses[indexPath.row];
+                    }
+                    cell.textLabel.text = [NSString stringWithFormat:@"%@", course.name];
+                }
+                
+            } break;
+            
             case 2: {
-                cell.textLabel.text = @"Sector";
                 
-                detail.text =  _course.sector ? _course.sector : nil;
-                _sectorField = detail;
-            }
-                break;
+                if (_teachers) {
+                    User *user;
+                    if (_enableEditing) {
+                        cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+                        user = _teachers[indexPath.row - 1];
+                    } else {
+                        user = _teachers[indexPath.row];
+                    }
+                    cell.textLabel.text = [NSString stringWithFormat:@"%@ %@", user.firstName, user.lastName];
+                }
+                
+            } break;
+                
             case 3: {
-                cell.textLabel.text = @"Teacher";
                 
-                detail.text = _teacher.firstName.length > 0 ? [NSString stringWithFormat:@"%@ %@", _teacher.firstName, _teacher.lastName] : @"";
-                detail.placeholder = @"Select teacher";
-                _teacherField = detail;
-            }
-                break;
-        }
-        
-    } else if ([cell.reuseIdentifier isEqualToString:@"CellUser"]) {
-        
-        if (_students) {
-            User *user;
-            if (_enableEditing) {
-                cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
-                user = _students[indexPath.row - 1];
-            } else {
-                user = _students[indexPath.row];
-            }
-            cell.textLabel.text = [NSString stringWithFormat:@"%@ %@", user.firstName, user.lastName];
+                if (_students) {
+                    User *user;
+                    if (_enableEditing) {
+                        cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+                        user = _students[indexPath.row - 1];
+                    } else {
+                        user = _students[indexPath.row];
+                    }
+                    cell.textLabel.text = [NSString stringWithFormat:@"%@ %@", user.firstName, user.lastName];
+                }
+                
+            } break;
         }
     }
 }
 
 - (BOOL)tableView:(UITableView *)tableView canEditRowAtIndexPath:(NSIndexPath *)indexPath {
     // Return NO if you do not want the specified item to be editable.
-    if (indexPath.section == 1 && indexPath.row > 0) {
+    if (indexPath.section > 0 && indexPath.row > 0) {
         return YES;
     }
     return NO;
@@ -331,7 +430,20 @@
     
     if (editingStyle == UITableViewCellEditingStyleDelete) {
         
-        [_students removeObjectAtIndex:indexPath.row - 1];
+        switch (indexPath.section) {
+            
+            case 1: {
+                [_courses removeObjectAtIndex:indexPath.row - 1];
+            } break;
+            
+            case 2: {
+                [_teachers removeObjectAtIndex:indexPath.row - 1];
+            } break;
+                
+            case 3: {
+                [_students removeObjectAtIndex:indexPath.row - 1];
+            } break;
+        }
         
         [[DataManager sharedManager] saveContext];
         
@@ -349,10 +461,21 @@
     //[tableView deselectRowAtIndexPath:indexPath animated:NO];
     
     if (_enableEditing          &&
-        indexPath.section == 1  &&
         indexPath.row > 0) {
         
-        [self showStudentUser];
+        switch (indexPath.section) {
+            case 1:
+                [self showCourse];
+                break;
+            case 2:
+                [self showUser:UsersTypeTeachers];
+                break;
+            case 3:
+                [self showUser:UsersTypeStudents];
+                break;
+            default:
+                break;
+        }
     }
 }
 
@@ -362,22 +485,20 @@
     
     if ((_enableEditing)    &&
         
-        (_nameField.text.length > 0     ||
-         _subjectField.text.length > 0  ||
-         _sectorField.text.length > 0   ||
-         _teacher.firstName.length > 0  ||
-         _students.count > 0            ||
-         _course)   &&
+        (_nameField.text.length > 0 ||
+         _courses.count > 0         ||
+         _teachers.count > 0        ||
+         _students.count > 0        ||
+         _university)   &&
         
-        (![_course.name isEqualToString:_nameField.text]                        ||
-         ![_course.subject isEqualToString:_subjectField.text]                  ||
-         ![_course.sector isEqualToString:_sectorField.text]                    ||
-         (![_course.teacher isEqual:_teacher] && _teacher.firstName.length > 0) ||
-         ![_course.students isEqual:[NSSet setWithArray:_students]])) {
+        (![_university.name isEqualToString:_nameField.text]                ||
+         ![_university.courses isEqual:[NSSet setWithArray:_courses]]       ||
+         ![_university.teachers isEqual:[NSSet setWithArray:_teachers]]     ||
+         ![_university.students isEqual:[NSSet setWithArray:_students]])) {
             
             [self presentBackAlert];
             return NO;
-        
+            
         }
     
     return YES;
@@ -392,7 +513,7 @@
         [fetchRequest setPredicate:predicate];
         NSArray *results = [[DataManager sharedManager].persistentContainer.viewContext executeFetchRequest:fetchRequest error:nil];
         
-        if (results.count > 0 && ![_course.name isEqualToString:_nameField.text]) {
+        if (results.count > 0 && ![_university.name isEqualToString:_nameField.text]) {
             
             [self presentSaveAlertWithMessage:@"This name is exist"];
             return NO;
@@ -402,7 +523,7 @@
         return YES;
     }
     
-    [self presentSaveAlertWithMessage:@"Fill course name"];
+    [self presentSaveAlertWithMessage:@"Fill university name"];
     return NO;
 }
 
@@ -423,45 +544,16 @@
     
     if ([self verificationFillingOfFieldsForSave ]) {
         
-        if (!_course) {
-            _course = [[Course alloc] initWithContext:[DataManager sharedManager].persistentContainer.viewContext];
+        if (!_university) {
+            _university = [[University alloc] initWithContext:[DataManager sharedManager].persistentContainer.viewContext];
         }
         
-        [self changeCourse];
-        
-        NSLog(@"%@", _course.teacher);
+        [self changeUniversity];
         
         [[DataManager sharedManager] saveContext];
         
         [self.navigationController popViewControllerAnimated:YES];
     }
-}
-
-#pragma mark - UITextFieldDelegate
-
-- (BOOL)textFieldShouldReturn:(UITextField *)textField {
-    
-    if ([textField isEqual:_nameField]) {
-        [_subjectField becomeFirstResponder];
-    } else if ([textField isEqual:_subjectField]) {
-        [_sectorField becomeFirstResponder];
-    } else if ([textField isEqual:_sectorField]) {
-        [_teacherField becomeFirstResponder];
-    }
-    
-    return YES;
-}
-
-- (BOOL)textFieldShouldBeginEditing:(UITextField *)textField {
-    
-    if ([textField isEqual:_teacherField]) {
-        
-        [self showTeacherUser];
-        
-        return NO;
-    }
-    
-    return YES;
 }
 
 #pragma mark - Navigation
@@ -471,36 +563,59 @@
     // Get the new view controller using [segue destinationViewController].
     // Pass the selected object to the new view controller.
     
-    if ([segue.identifier isEqualToString:@"CourseStudents"]) {
-        
-        UINavigationController *nc = [segue destinationViewController];
+    UINavigationController *nc = [segue destinationViewController];
+    
+    if ([segue.identifier isEqualToString:@"UniversityTeachers"]) {
         
         UserSelectionViewController *vc = (UserSelectionViewController *)nc.topViewController;
-        vc.navigationItem.title = @"Students";
-        vc.type = UsersCountSomeUsers;
-        //vc.usersType = UsersTypeStudents;
-        //vc.course = _course;
-        vc.users = _students;
         vc.delegate = self;
+        vc.type = UsersCountSomeUsers;
+        vc.navigationItem.title = @"Teachers";
+        vc.usersType = UsersTypeTeachers;
+        vc.users = _teachers;
+        
+    } else if ([segue.identifier isEqualToString:@"UniversityStudents"]) {
+        
+        UserSelectionViewController *vc = (UserSelectionViewController *)nc.topViewController;
+        vc.delegate = self;
+        vc.type = UsersCountSomeUsers;
+        vc.navigationItem.title = @"Students";
+        vc.usersType = UsersTypeStudents;
+        vc.users = _students;
+        
+    } else if ([segue.identifier isEqualToString:@"UniversityCourses"]) {
+        
+        CourseSelectionViewController *vc = (CourseSelectionViewController *)nc.topViewController;
+        vc.delegate = self;
+        vc.type = CoursesCountSomeCourses;
+        vc.navigationItem.title = @"Courses";
+        vc.courses = _courses;
     }
 }
 
-- (void)showTeacherUser {
-    UserSelectionViewController *vc = [self.storyboard instantiateViewControllerWithIdentifier:@"CourseUsersViewController"];
-    vc.modalTransitionStyle = UIModalTransitionStyleCoverVertical;
-    vc.navigationItem.title = @"Teacher";
-    vc.type = UsersCountOnceUser;
-    //vc.usersType = UsersTypeTeachers;
-    //vc.course = _course;
-    vc.users = _teacher != nil ? [NSMutableArray arrayWithObject:_teacher] : nil;
-    vc.delegate = self;
-    UINavigationController *nc = [[UINavigationController alloc] initWithRootViewController:vc];
-    [self presentViewController:nc animated:YES completion:nil];
+- (void)showCourse {
+    _editUserIndexPath = [self.tableView indexPathForSelectedRow];
+    Course *course = _courses[_editUserIndexPath.row - 1];
+    
+    EditingCourseViewController *vc = [self.storyboard instantiateViewControllerWithIdentifier:@"EditingCourseViewController"];
+    vc.course = course;
+    vc.enableEditing = NO;
+    vc.navigationItem.title = [NSString stringWithFormat:@"%@", course.name];
+    
+    [self.navigationController pushViewController:vc animated:YES];
 }
 
-- (void)showStudentUser {
+- (void)showUser:(UsersType)type {
     _editUserIndexPath = [self.tableView indexPathForSelectedRow];
-    User *user = _students[_editUserIndexPath.row - 1];
+    User *user;
+    switch (type) {
+        case UsersTypeTeachers:
+            user = _teachers[_editUserIndexPath.row - 1];
+            break;
+        case UsersTypeStudents:
+            user = _students[_editUserIndexPath.row - 1];
+            break;
+    }
     
     EditingUserViewController *vc = [self.storyboard instantiateViewControllerWithIdentifier:@"EditingUserViewController"];
     vc.user = user;
@@ -513,14 +628,39 @@
 #pragma mark - UserSelectionViewControllerDelegate
 
 - (void)saveUsers:(NSArray *)users countType:(UsersCountType)countType andUsersType:(UsersType)usersType {
-    if (countType == UsersCountOnceUser) {
-        _teacher = [users firstObject];
-    } else if (countType == UsersCountSomeUsers) {
-        _students = [users mutableCopy];
+    
+    if (countType == UsersCountSomeUsers) {
+        
+        switch (usersType) {
+            
+            case UsersTypeTeachers:
+                _teachers = [users mutableCopy];
+                break;
+            
+            case UsersTypeStudents:
+                _students = [users mutableCopy];
+                break;
+        }
+    }
+}
+
+#pragma mark - CourseSelectionViewControllerDelegate
+
+- (void)saveCourses:(NSArray *)courses countType:(CoursesCountType)countType {
+    
+    if (countType == CoursesCountSomeCourses) {
+        
+        _courses = [courses mutableCopy];
     }
 }
 
 @end
+
+
+
+
+
+
 
 
 

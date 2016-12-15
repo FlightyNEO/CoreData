@@ -1,17 +1,17 @@
 //
-//  CourseUsersViewController.m
+//  UserSelectionViewController.m
 //  CoreData
 //
 //  Created by Arkadiy Grigoryanc on 10.12.16.
 //  Copyright © 2016 Arkadiy Grigoryanc. All rights reserved.
 //
 
-#import "CourseUsersViewController.h"
+#import "UserSelectionViewController.h"
 
-#import "Course+CoreDataClass.h"
+//#import "Course+CoreDataClass.h"
 #import "User+CoreDataClass.h"
 
-@interface CourseUsersViewController () <UISearchBarDelegate>
+@interface UserSelectionViewController () <UISearchBarDelegate>
 
 @property (weak, nonatomic) IBOutlet UISearchBar *searchBar;
 
@@ -19,7 +19,7 @@
 
 @end
 
-@implementation CourseUsersViewController
+@implementation UserSelectionViewController
 
 @synthesize fetchedResultsController = _fetchedResultsController;
 
@@ -85,23 +85,22 @@
     
     switch (_type) {
         
-        case UsersViewControllerWithStudents: {
+        case UsersCountSomeUsers: {
             
-            if ([_editingCourseViewController.users containsObject:user]) {
+            if ([_users containsObject:user]) {
                 
                 cell.accessoryType = UITableViewCellAccessoryCheckmark;
                 
             } else {
-                
                 
                 cell.accessoryType = UITableViewCellAccessoryNone;
             }
         }
             break;
         
-        case UsersViewControllerWithTeacher: {
+        case UsersCountOnceUser: {
             
-            if ([_editingCourseViewController.teacher isEqual:user]) {
+            if ([[_users firstObject] isEqual:user]) {
                 
                 cell.accessoryType = UITableViewCellAccessoryCheckmark;
                 _selectedIndexPath = indexPath;
@@ -124,30 +123,30 @@
     
     switch (_type) {
         
-        case UsersViewControllerWithStudents: {
+        case UsersCountSomeUsers: {
             
-            if ([_editingCourseViewController.users containsObject:user]) {
+            if ([_users containsObject:user]) {
                 
-                [_editingCourseViewController.users removeObject:user];
+                [_users removeObject:user];
                 
             } else {
                 
-                [_editingCourseViewController.users addObject:user];
+                [_users addObject:user];
             }
             
             [self.tableView reloadRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationFade];
         }
             break;
             
-        case UsersViewControllerWithTeacher: {
+        case UsersCountOnceUser: {
             
-            if ([_editingCourseViewController.teacher isEqual:user]) {
+            if ([[_users firstObject] isEqual:user]) {
                 
-                _editingCourseViewController.teacher = nil;
+                _users = nil;
             
             } else {
                 
-                _editingCourseViewController.teacher = user;
+                _users = [NSMutableArray arrayWithObject:user];
                 
                 if (_selectedIndexPath) {
                     
@@ -166,6 +165,9 @@
 #pragma mark - Actions
 
 - (IBAction)actionSave:(id)sender {
+    
+    [_delegate saveUsers:_users countType:_type andUsersType:_usersType];
+    
     [self dismissViewControllerAnimated:YES completion:nil];
 }
 

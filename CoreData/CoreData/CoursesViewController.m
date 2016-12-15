@@ -183,7 +183,7 @@ typedef enum {
     if ([segue.identifier isEqualToString:@"EditCourse"]) {
         vc.course = [self.fetchedResultsController objectAtIndexPath:[self.tableView indexPathForSelectedRow]];
         vc.navigationItem.title = @"Editing course";
-    } else {
+    } else if ([segue.identifier isEqualToString:@"AddCourse"]) {
         vc.navigationItem.title = @"Add course";
     }
 }
