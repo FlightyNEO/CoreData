@@ -8,6 +8,7 @@
 
 #import "CourseSelectionViewController.h"
 
+#import "University+CoreDataClass.h"
 #import "Course+CoreDataClass.h"
 
 @interface CourseSelectionViewController () <UISearchBarDelegate>
@@ -80,6 +81,12 @@
     Course *course = [self.fetchedResultsController objectAtIndexPath:indexPath];
     
     cell.textLabel.text = [NSString stringWithFormat:@"%@", course.name];
+    
+    if (course.university.name.length > 0 &&
+        ![course.university isEqual:_university]) {
+        
+        cell.textLabel.textColor = [UIColor redColor];
+    }
     
     switch (_type) {
             

@@ -20,7 +20,7 @@ typedef enum {
     UsersTypeStudents = 2
 } UsersType;
 
-@class User;
+@class Course, User;
 
 @protocol UserSelectionViewControllerDelegate;
 
@@ -31,6 +31,7 @@ typedef enum {
 
 @property (weak, nonatomic) id<UserSelectionViewControllerDelegate> delegate;
 
+@property (strong, nonatomic) Course *course;
 @property (strong, nonatomic) NSMutableArray<User *> *users;
 
 @end

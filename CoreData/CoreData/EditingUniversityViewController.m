@@ -113,9 +113,7 @@
         }
     }
     
-    [self.tableView beginUpdates];
-    [self.tableView reloadSections:[NSIndexSet indexSetWithIndexesInRange:NSMakeRange(1, 3)] withRowAnimation:UITableViewRowAnimationNone];
-    [self.tableView endUpdates];
+    [self.tableView reloadData];
     
     [super viewWillAppear:animated];
 }
@@ -254,7 +252,19 @@
 #pragma mark - Table view data source
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView {
-    return 4;
+    
+    NSInteger sectionsCount = 2;
+    
+    if (_teachers.count > 0) {
+        ++sectionsCount;
+    }
+    if (_students.count > 0) {
+        ++sectionsCount;
+    }
+    
+    return sectionsCount;
+    
+    //return 4;
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
@@ -274,19 +284,15 @@
         } break;
             
         case 2: {
-            if (_enableEditing) {
-                return _teachers.count + 1;
-            } else {
+            if (_teachers.count > 0) {
                 return _teachers.count;
+            } else {
+                return _students.count;
             }
         } break;
             
         case 3: {
-            if (_enableEditing) {
-                return _students.count + 1;
-            } else {
-                return _students.count;
-            }
+            return _students.count;
         } break;
             
         default:
@@ -303,9 +309,13 @@
         case 1:
             return @"Courses";
             break;
-        case 2:
-            return @"Teachers";
-            break;
+        case 2: {
+            if (_teachers.count > 0) {
+                return @"Teachers";
+            } else {
+                return @"Students";
+            }
+        } break;
         case 3:
             return @"Students";
             break;
@@ -322,27 +332,16 @@
     if (indexPath.section == 0) {
         
         identifire = @"CellEdit";
-    
+        
+    } else if (_enableEditing &&
+               indexPath.section == 1 &&
+               indexPath.row == 0) {
+        
+        identifire = @"CellAddCourse";
+        
     } else {
         
-        if (indexPath.row == 0 && _enableEditing) {
-            
-            switch (indexPath.section) {
-                case 1:
-                    identifire = @"CellAddCourse";
-                    break;
-                case 2:
-                    identifire = @"CellAddTeacher";
-                    break;
-                case 3:
-                    identifire = @"CellAddStudent";
-                    break;
-            }
-            
-        } else {
-            
-            identifire = @"Cell";
-        }
+        identifire = @"Cell";
     }
     
     UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:identifire forIndexPath:indexPath];
@@ -387,29 +386,24 @@
             
             case 2: {
                 
-                if (_teachers) {
-                    User *user;
-                    if (_enableEditing) {
-                        cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
-                        user = _teachers[indexPath.row - 1];
-                    } else {
-                        user = _teachers[indexPath.row];
-                    }
-                    cell.textLabel.text = [NSString stringWithFormat:@"%@ %@", user.firstName, user.lastName];
+                User *user;
+                
+                if (_teachers.count > 0) {
+                    user = _teachers[indexPath.row];
+                } else if (_students) {
+                    user = _students[indexPath.row];
                 }
+                
+                cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+                cell.textLabel.text = [NSString stringWithFormat:@"%@ %@", user.firstName, user.lastName];
                 
             } break;
                 
             case 3: {
                 
                 if (_students) {
-                    User *user;
-                    if (_enableEditing) {
-                        cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
-                        user = _students[indexPath.row - 1];
-                    } else {
-                        user = _students[indexPath.row];
-                    }
+                    User *user = _students[indexPath.row];
+                    cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
                     cell.textLabel.text = [NSString stringWithFormat:@"%@ %@", user.firstName, user.lastName];
                 }
                 
@@ -420,7 +414,7 @@
 
 - (BOOL)tableView:(UITableView *)tableView canEditRowAtIndexPath:(NSIndexPath *)indexPath {
     // Return NO if you do not want the specified item to be editable.
-    if (indexPath.section > 0 && indexPath.row > 0) {
+    if (_enableEditing && indexPath.section == 1 && indexPath.row > 0) {
         return YES;
     }
     return NO;
@@ -428,30 +422,116 @@
 
 - (void)tableView:(UITableView *)tableView commitEditingStyle:(UITableViewCellEditingStyle)editingStyle forRowAtIndexPath:(NSIndexPath *)indexPath {
     
+    [tableView beginUpdates];
+    
     if (editingStyle == UITableViewCellEditingStyleDelete) {
         
-        switch (indexPath.section) {
+        if (_courses.count > 1) {
             
-            case 1: {
-                [_courses removeObjectAtIndex:indexPath.row - 1];
-            } break;
+            BOOL isExistTeachersSection = _teachers.count > 0;
+            BOOL isExistStudentsSection = _students.count > 0;
             
-            case 2: {
-                [_teachers removeObjectAtIndex:indexPath.row - 1];
-            } break;
+            NSInteger studentsSection = 0;
+            NSInteger teachersSection = 0;
+            
+            if (isExistTeachersSection) {
+                teachersSection = 2;
+                studentsSection = 3;
+            } else if (isExistStudentsSection) {
+                studentsSection = 2;
+            }
+            
+            NSMutableArray *indexPaths = [NSMutableArray array];
+            
+            Course *removeCourse = _courses[indexPath.row - 1];
+            [_courses removeObject:removeCourse];
+            [indexPaths addObject:indexPath];
+            
+            NSMutableArray<User *> *tmpRemoveStudents = [NSMutableArray arrayWithArray:[removeCourse.students allObjects]];
+            
+            User *tmpRemoveTeacher = removeCourse.teacher;
+            
+            for (Course *course in _courses) {
                 
-            case 3: {
-                [_students removeObjectAtIndex:indexPath.row - 1];
-            } break;
+                if (removeCourse.students.count > 0) {
+                    
+                    for (User *removeStudent in removeCourse.students) {
+                        
+                        if (course.students.count > 0) {
+                            
+                            for (User *student in course.students) {
+                                
+                                if ([student isEqual:removeStudent]) {
+                                    
+                                    [tmpRemoveStudents removeObject:removeStudent];
+                                }
+                            }
+                        }
+                    }
+                    
+                    if ([course.teacher isEqual:removeCourse.teacher]) {
+                        tmpRemoveTeacher = nil;
+                    }
+                    
+                }
+            }
+            
+            if (tmpRemoveStudents.count > 0) {
+                
+                for (User *removeStudent in tmpRemoveStudents) {
+                    
+                    NSIndexPath *indexPath = [NSIndexPath indexPathForRow:[_students indexOfObject:removeStudent]
+                                                                inSection:studentsSection];
+                    [indexPaths addObject:indexPath];
+                }
+                
+                [_students removeObjectsInArray:tmpRemoveStudents];
+            }
+            
+            if (tmpRemoveTeacher) {
+                NSIndexPath *indexPath = [NSIndexPath indexPathForRow:[_teachers indexOfObject:removeCourse.teacher]
+                                                            inSection:2];
+                [indexPaths addObject:indexPath];
+                [_teachers removeObject:removeCourse.teacher];
+            }
+            
+            [tableView deleteRowsAtIndexPaths:indexPaths
+                             withRowAnimation:UITableViewRowAnimationLeft];
+            
+            if (isExistTeachersSection && _teachers.count == 0) {
+                [tableView deleteSections:[NSIndexSet indexSetWithIndex:teachersSection]
+                         withRowAnimation:UITableViewRowAnimationLeft];
+            }
+            
+            if (isExistStudentsSection && _students.count == 0) {
+                [tableView deleteSections:[NSIndexSet indexSetWithIndex:studentsSection]
+                         withRowAnimation:UITableViewRowAnimationLeft];
+            }
+        
+        } else {
+            
+            _courses = [NSMutableArray array];
+            _students = [NSMutableArray array];
+            _teachers = [NSMutableArray array];
+            
+//            [tableView deleteSections:[NSIndexSet indexSetWithIndex:2] withRowAnimation:UITableViewRowAnimationLeft];
+//            [tableView deleteSections:[NSIndexSet indexSetWithIndex:3] withRowAnimation:UITableViewRowAnimationLeft];
+            
+            NSInteger countSections = tableView.numberOfSections - 2;
+            [tableView deleteSections:[NSIndexSet indexSetWithIndexesInRange:NSMakeRange(2, countSections)]
+                     withRowAnimation:UITableViewRowAnimationLeft];
+            
+            [tableView deleteRowsAtIndexPaths:@[indexPath]
+                             withRowAnimation:UITableViewRowAnimationLeft];
+            
         }
+        
+        
+        
         
         [[DataManager sharedManager] saveContext];
         
-        [self.tableView beginUpdates];
-        
-        [self.tableView deleteRowsAtIndexPaths:@[indexPath]
-                              withRowAnimation:UITableViewRowAnimationLeft];
-        [self.tableView endUpdates];
+        [tableView endUpdates];
     }
 }
 
@@ -460,20 +540,19 @@
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
     //[tableView deselectRowAtIndexPath:indexPath animated:NO];
     
-    if (_enableEditing          &&
-        indexPath.row > 0) {
+    if (_enableEditing) {
         
         switch (indexPath.section) {
-            case 1:
-                [self showCourse];
-                break;
+            case 1: {
+                if (indexPath.row > 0) {
+                    [self showCourse];
+                }
+            } break;
             case 2:
                 [self showUser:UsersTypeTeachers];
                 break;
             case 3:
                 [self showUser:UsersTypeStudents];
-                break;
-            default:
                 break;
         }
     }
@@ -589,6 +668,7 @@
         vc.delegate = self;
         vc.type = CoursesCountSomeCourses;
         vc.navigationItem.title = @"Courses";
+        vc.university = _university;
         vc.courses = _courses;
     }
 }
@@ -610,10 +690,10 @@
     User *user;
     switch (type) {
         case UsersTypeTeachers:
-            user = _teachers[_editUserIndexPath.row - 1];
+            user = _teachers[_editUserIndexPath.row];
             break;
         case UsersTypeStudents:
-            user = _students[_editUserIndexPath.row - 1];
+            user = _students[_editUserIndexPath.row];
             break;
     }
     
@@ -650,7 +730,31 @@
     
     if (countType == CoursesCountSomeCourses) {
         
+        _students = [NSMutableArray array];
+        _teachers = [NSMutableArray array];
+        
         _courses = [courses mutableCopy];
+        
+        for (Course *course in _courses) {
+            
+            // add new students
+            if (course.students.count > 0) {
+                for (User *student in course.students) {
+                    if (![_students containsObject:student]) {
+                        [_students addObject:student];
+                    }
+                }
+            }
+            
+            // add new teacher
+            if (course.teacher != nil) {
+                if (!_teachers) {
+                    _teachers  = [NSMutableArray arrayWithObject:course.teacher];
+                } else if (![_teachers containsObject:course.teacher]) {
+                    [_teachers addObject:course.teacher];
+                }
+            }
+        }
     }
 }
 

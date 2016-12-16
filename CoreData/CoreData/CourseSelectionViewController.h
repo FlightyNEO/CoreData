@@ -13,7 +13,7 @@ typedef enum {
     CoursesCountOnceCourse = 2
 } CoursesCountType;
 
-@class Course;
+@class University, Course;
 
 @protocol CourseSelectionViewControllerDelegate;
 
@@ -22,6 +22,8 @@ typedef enum {
 @property (assign, nonatomic) CoursesCountType type;
 
 @property (weak, nonatomic) id<CourseSelectionViewControllerDelegate> delegate;
+
+@property (strong, nonatomic) University *university;
 
 @property (strong, nonatomic) NSMutableArray<Course *> *courses;
 

@@ -14,6 +14,7 @@
 
 #import "UIBarButtonItem+UIBarButtonItemCustomButton.h"
 
+#import "University+CoreDataClass.h"
 #import "Course+CoreDataClass.h"
 #import "User+CoreDataClass.h"
 
@@ -22,6 +23,7 @@
 @property (weak, nonatomic) UITextField *nameField;
 @property (weak, nonatomic) UITextField *subjectField;
 @property (weak, nonatomic) UITextField *sectorField;
+@property (weak, nonatomic) UITextField *univesityField;
 @property (weak, nonatomic) UITextField *teacherField;
 
 @property (strong, nonatomic) NSMutableArray<User *> *students;
@@ -96,7 +98,7 @@
     
     [self.tableView beginUpdates];
     [self.tableView reloadSections:[NSIndexSet indexSetWithIndex:1] withRowAnimation:UITableViewRowAnimationNone];
-    [self.tableView reloadRowsAtIndexPaths:@[[NSIndexPath indexPathForRow:3 inSection:0]] withRowAnimation:UITableViewRowAnimationNone];
+    [self.tableView reloadRowsAtIndexPaths:@[[NSIndexPath indexPathForRow:4 inSection:0]] withRowAnimation:UITableViewRowAnimationNone];
     [self.tableView endUpdates];
     
     [super viewWillAppear:animated];
@@ -149,6 +151,7 @@
     _course.sector      = _sectorField.text;
     [_course setTeacher:_teacher];
     [_course setStudents:[NSSet setWithArray:_students]];
+    [_course.university setStudents:_course.students];
 }
 
 #pragma mark - Alerts
@@ -206,7 +209,7 @@
     switch (section) {
             
         case 0: {
-            return 4;
+            return 5;
         } break;
             
         case 1: {
@@ -273,35 +276,42 @@
         [cell addSubview:detail];
         
         switch (indexPath.row) {
+            
             case 0: {
                 cell.textLabel.text = @"Course name";
                 
                 detail.text = _course.name ? _course.name : nil;
                 _nameField = detail;
-            }
-                break;
+            } break;
+            
             case 1: {
                 cell.textLabel.text = @"Subject";
                 
                 detail.text = _course.subject ? _course.subject : nil;
                 _subjectField = detail;
-            }
-                break;
+            } break;
+            
             case 2: {
                 cell.textLabel.text = @"Sector";
                 
-                detail.text =  _course.sector ? _course.sector : nil;
+                detail.text = _course.sector ? _course.sector : nil;
                 _sectorField = detail;
-            }
-                break;
+            } break;
+                
             case 3: {
+                cell.textLabel.text = @"University";
+                
+                detail.text = _course.university.name.length > 0 ? [NSString stringWithFormat:@"%@", _course.university.name] : @"";
+                _univesityField = detail;
+            } break;
+                
+            case 4: {
                 cell.textLabel.text = @"Teacher";
                 
                 detail.text = _teacher.firstName.length > 0 ? [NSString stringWithFormat:@"%@ %@", _teacher.firstName, _teacher.lastName] : @"";
                 detail.placeholder = @"Select teacher";
                 _teacherField = detail;
-            }
-                break;
+            } break;
         }
         
     } else if ([cell.reuseIdentifier isEqualToString:@"CellUser"]) {
@@ -321,7 +331,7 @@
 
 - (BOOL)tableView:(UITableView *)tableView canEditRowAtIndexPath:(NSIndexPath *)indexPath {
     // Return NO if you do not want the specified item to be editable.
-    if (indexPath.section == 1 && indexPath.row > 0) {
+    if (_enableEditing && indexPath.section == 1 && indexPath.row > 0) {
         return YES;
     }
     return NO;
@@ -373,6 +383,7 @@
          ![_course.subject isEqualToString:_subjectField.text]                  ||
          ![_course.sector isEqualToString:_sectorField.text]                    ||
          (![_course.teacher isEqual:_teacher] && _teacher.firstName.length > 0) ||
+         _teacher.firstName.length == 0                                         ||
          ![_course.students isEqual:[NSSet setWithArray:_students]])) {
             
             [self presentBackAlert];
@@ -479,14 +490,14 @@
         vc.navigationItem.title = @"Students";
         vc.type = UsersCountSomeUsers;
         //vc.usersType = UsersTypeStudents;
-        //vc.course = _course;
+        vc.course = _course;
         vc.users = _students;
         vc.delegate = self;
     }
 }
 
 - (void)showTeacherUser {
-    UserSelectionViewController *vc = [self.storyboard instantiateViewControllerWithIdentifier:@"CourseUsersViewController"];
+    UserSelectionViewController *vc = [self.storyboard instantiateViewControllerWithIdentifier:@"UserSelectionViewController"];
     vc.modalTransitionStyle = UIModalTransitionStyleCoverVertical;
     vc.navigationItem.title = @"Teacher";
     vc.type = UsersCountOnceUser;

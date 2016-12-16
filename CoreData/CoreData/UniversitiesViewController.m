@@ -86,9 +86,9 @@
     vc.enableEditing = YES;
     if ([segue.identifier isEqualToString:@"EditUniversity"]) {
         vc.university = [self.fetchedResultsController objectAtIndexPath:[self.tableView indexPathForSelectedRow]];
-        vc.navigationItem.title = @"Editing course";
+        vc.navigationItem.title = @"Editing university";
     } else if ([segue.identifier isEqualToString:@"AddUniversity"]) {
-        vc.navigationItem.title = @"Add course";
+        vc.navigationItem.title = @"Add university";
     }
 }
 

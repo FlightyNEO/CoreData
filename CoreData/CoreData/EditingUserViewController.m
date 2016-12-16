@@ -15,12 +15,14 @@
 
 #import "User+CoreDataClass.h"
 #import "Course+CoreDataClass.h"
+#import "University+CoreDataClass.h"
 
 @interface EditingUserViewController () <UITextFieldDelegate>
 
 @property (weak, nonatomic) UITextField *firstNameField;
 @property (weak, nonatomic) UITextField *lastNameField;
 @property (weak, nonatomic) UITextField *eMailField;
+@property (weak, nonatomic) UITextField *universityField;
 
 @property (strong, nonatomic) NSArray <Course *> *teachesCourses;
 @property (strong, nonatomic) NSArray <Course *> *studesCourses;
@@ -229,12 +231,14 @@
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
+    
     switch (section) {
+        
         case 0:
-            return 3;
+            return 4;
             break;
+        
         case 1: {
-            
             if (_teachesCourses.count > 0) {
                 return _teachesCourses.count;
             } else {
@@ -242,9 +246,11 @@
             }
         }
             break;
+        
         case 2:
             return _studesCourses.count;
             break;
+        
         default:
             return 0;
             break;
@@ -325,6 +331,13 @@
                 detail.returnKeyType = UIReturnKeyDone;
                 detail.keyboardType = UIKeyboardTypeEmailAddress;
                 _eMailField = detail;
+            } break;
+            
+            case 3: {
+                cell.textLabel.text = @"University";
+                detail.text =  _user.studentsUniversity.name;
+                detail.enabled = NO;
+                _universityField = detail;
             } break;
         }
         

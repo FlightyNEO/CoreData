@@ -8,7 +8,8 @@
 
 #import "UserSelectionViewController.h"
 
-//#import "Course+CoreDataClass.h"
+#import "University+CoreDataClass.h"
+#import "Course+CoreDataClass.h"
 #import "User+CoreDataClass.h"
 
 @interface UserSelectionViewController () <UISearchBarDelegate>
@@ -82,6 +83,16 @@
     User *user = [self.fetchedResultsController objectAtIndexPath:indexPath];
     
     cell.textLabel.text = [NSString stringWithFormat:@"%@ %@", user.firstName, user.lastName];
+    
+    if (user.studentsUniversity != nil) {
+        if (![user.studentsUniversity.name isEqualToString:_course.university.name]) {
+            cell.textLabel.textColor = [UIColor redColor];
+        } else {
+            cell.textLabel.textColor = [UIColor blackColor];
+        }
+    } else {
+        cell.textLabel.textColor = [UIColor blackColor];
+    }
     
     switch (_type) {
         
